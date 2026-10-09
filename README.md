@@ -4,6 +4,7 @@ Workbook en línea del Sistema de Ingresos™ que se embebe en Webflow y se sirv
 
 - **Participantes** entran con su correo y un PIN de 6 dígitos, llenan los 8 Blueprints y el plan de 90 días (todo se guarda solo) y descargan su workbook en PDF.
 - **Admins** (panel de Agora) crean cohortes, dan de alta participantes (uno por uno o en lista), consultan PINs, reenvían accesos y ven el avance de cada persona.
+- **Sesiones en vivo**: cada cohorte tiene sus 3 sesiones (kick-off, jueves y viernes) con fecha, horario en hora de la Ciudad de México, liga de Meet y liga de la grabación. Los participantes ven «Unirme» o «Ver repetición» según el momento.
 
 | Página | Contenedor | Config |
 | --- | --- | --- |
