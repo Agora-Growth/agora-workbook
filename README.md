@@ -1,1 +1,17 @@
-# agora-workbook
+# Agora Growth · Workbook del Sprint Ejecutivo
+
+Workbook en línea del Sistema de Ingresos™ que se embebe en Webflow y se sirve con jsDelivr.
+
+- **Participantes** entran con su correo y un PIN de 6 dígitos, llenan los 8 Blueprints y el plan de 90 días (todo se guarda solo) y descargan su workbook en PDF.
+- **Admins** (panel de Agora) crean cohortes, dan de alta participantes (uno por uno o en lista), consultan PINs, reenvían accesos y ven el avance de cada persona.
+
+| Página | Contenedor | Config |
+| --- | --- | --- |
+| Participantes | `<div id="ag-wb">` | `window.AG_WB_CONFIG = { mode: 'participant', endpoint }` |
+| Panel de admin | `<div id="ag-wb">` | `window.AG_WB_CONFIG = { mode: 'admin', endpoint }` |
+
+Script (versión fija por release): `https://cdn.jsdelivr.net/gh/Agora-Growth/agora-workbook@<tag>/workbook.min.js`
+
+Las fuentes del PDF (`fonts/`, licencia SIL OFL 1.1) se cargan desde la misma versión del script.
+
+Los datos y el contenido del workbook (preguntas, prompts, FAQs, glosario) viven en el Apps Script privado del Sheet del workbook, no en este repo: solo se entregan a usuarios con sesión.
