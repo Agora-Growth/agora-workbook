@@ -9,6 +9,11 @@ Workbook en línea del Sistema de Ingresos™ que se embebe en Webflow y se sirv
 - **Reloj del Sprint**: cuenta regresiva al kick-off, tareas del día, próxima sesión y cierre del workbook ganador (hora CDMX).
 - **Kits de práctica** por Blueprint: ejemplo resuelto, rúbrica de autoevaluación, errores comunes, prompts de revisión y calculadoras que llevan el resultado a la respuesta.
 - **Materiales**: las ligas de Drive/YouTube se administran en la pestaña «Materiales» del Sheet.
+- **Copiloto IA** (Claude, desde v1.6): para los participantes que el panel habilite (Activo, Bloqueado u Oculto, por cohorte o por persona). Explica el contenido y la logística, ayuda a arrancar cada sección, revisa con la rúbrica y propone borradores que el participante decide insertar. Límites por día y por Sprint, tope de gasto mensual y apagado automático al día siguiente de la última sesión. La API key vive en las propiedades del Apps Script, nunca en este repo.
+- **Copiloto del facilitador** en el panel: prepara los talleres con las respuestas de la cohorte, resume a un participante, agrupa dudas y analiza lo que preguntan al copiloto.
+- **Dudas para el taller**: los participantes las envían desde cada sección; el panel las agrupa por sesión, permite responderlas y proyectarlas en vivo.
+- **Correos automáticos**: recordatorio un día antes y una hora antes de cada sesión, y check-ins del plan de 90 días a los 30, 60 y 90 días (con aviso a Agora si alguien pide ayuda).
+- **Calendario y feedback**: cada sesión se agrega a Google Calendar o como .ics, y muestra su formulario de feedback desde que empieza.
 
 | Página | Contenedor | Config |
 | --- | --- | --- |

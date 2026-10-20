@@ -1,4 +1,4 @@
-/*! Agora Growth · Workbook del Sistema de Ingresos™ · v1.5
+/*! Agora Growth · Workbook del Sistema de Ingresos™ · v1.6
  *  Se monta dentro de <div id="ag-wb"></div>. window.AG_WB_CONFIG = { endpoint, mode: 'participant' | 'admin' }.
  */
 (function () {
@@ -10,7 +10,7 @@
     mode: 'participant',
     endpoint: '',
     workbookUrl: 'https://www.agoragrowth.com/sprint-ejecutivo-workbook',
-    assetsBase: 'https://cdn.jsdelivr.net/gh/Agora-Growth/agora-workbook@v1.5/',
+    assetsBase: 'https://cdn.jsdelivr.net/gh/Agora-Growth/agora-workbook@v1.6/',
     libs: { jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js' },
     fontsUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=DM+Serif+Display&display=swap'
   };
@@ -162,16 +162,28 @@
     sheet: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>',
     slides: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8M12 18v4"/></svg>',
     link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
-    compass: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8l-2.5 5.5L8 16l2.5-5.5z"/></svg>'
+    compass: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8l-2.5 5.5L8 16l2.5-5.5z"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    cal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+    help: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg>',
+    send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg>',
+    reset: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6"/><path d="M20 12a8 8 0 0 0-14.9-4L4 10M4 14a8 8 0 0 0 14.9 4"/></svg>',
+    screen: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>'
   };
 
   /* ===================== ESTADO ===================== */
   const tokenKey = 'agwb:token:' + (ADMIN ? 'admin' : 'participant');
   const S = {
     token: store.get(tokenKey), me: null, answers: {}, pending: {}, saving: false, saveTimer: null, retry: 0, savedAt: null, materials: [], focusSection: null,
-    admin: { me: null, cohorts: null, detail: {}, workbooks: {}, showPins: {}, addMode: 'one', lastAdd: null, filter: '' },
+    cop: freshCop(), doubts: [], followup: [], facilitator: 'tu facilitador',
+    admin: freshAdmin(),
     msg: '', busy: false
   };
+  function freshCop() { return { state: null, thread: null, busy: false, applied: {}, doubtSent: {}, draft: '' }; }
+  function freshAdmin() { return { me: null, cohorts: null, detail: {}, workbooks: {}, showPins: {}, addMode: 'one', lastAdd: null, filter: '', fc: {}, questions: {}, doubtFilter: 'pending', proj: null, settingsOpen: false }; }
   let root, view, toastEl, saveEl;
 
   /* ===================== API ===================== */
@@ -198,15 +210,15 @@
     if (CFG.fontsUrl && !document.querySelector('link[data-agwb-fonts]')) {
       const ln = document.createElement('link'); ln.rel = 'stylesheet'; ln.href = CFG.fontsUrl; ln.setAttribute('data-agwb-fonts', '1'); document.head.appendChild(ln);
     }
-    root.innerHTML = '<div class="wb-view"></div><div class="wb-save" aria-live="polite"></div><div class="wb-toast" role="status" aria-live="polite"></div><div class="wb-layer"></div>';
+    root.innerHTML = '<div class="wb-view"></div><div class="wb-fab-slot"></div><div class="wb-save" aria-live="polite"></div><div class="wb-toast" role="status" aria-live="polite"></div><div class="wb-layer"></div>';
     view = root.querySelector('.wb-view');
     saveEl = root.querySelector('.wb-save');
     toastEl = root.querySelector('.wb-toast');
     root.addEventListener('click', onClick);
     root.addEventListener('input', onInput);
-    root.addEventListener('change', (e) => { if (e.target.matches('select[data-calc]')) onInput(e); });
+    root.addEventListener('change', (e) => { if (e.target.matches('select[data-calc]')) onInput(e); else if (e.target.hasAttribute('data-act-change')) onChange(e); });
     root.addEventListener('submit', onSubmit);
-    root.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLayer(); });
+    document.addEventListener('keydown', onKey);
     window.addEventListener('hashchange', () => { render(); scrollTop(); });
     window.addEventListener('pagehide', flushBeacon);
     window.addEventListener('beforeunload', (e) => { if (!ADMIN && Object.keys(S.pending).length && !STORE_OK) { e.preventDefault(); e.returnValue = ''; } });
@@ -227,7 +239,7 @@
         const me = await api('admin.me');
         if (!me.ok) throw new Error(me.error);
         setContent(me.content);
-        S.admin.me = me; S.materials = me.materials || [];
+        S.admin.me = me; S.materials = me.materials || []; S.admin.settings = me.settings; S.admin.feedbackSheet = me.feedbackSheet;
       } catch (e) { if (e.code !== 'auth') return renderError(e); return; }
       return render();
     }
@@ -245,6 +257,10 @@
   }
 
   function render() {
+    renderView();
+    updateFab();
+  }
+  function renderView() {
     if (!S.token) return renderLogin();
     if (ADMIN) return CONTENT ? renderAdmin() : renderLoading('Cargando el panel…');
     if (!S.me) return renderLoading('Cargando tu workbook…');
@@ -253,6 +269,7 @@
     if (r[1] === 'guia') return renderGuide(r[2]);
     if (r[1] === 'plan') return renderPlan();
     if (r[1] === 'biblioteca') return renderLibrary();
+    if (r[1] === 'seguimiento') return renderFollowup(r[2]);
     return renderHome();
   }
 
@@ -313,7 +330,7 @@
       if (ADMIN) {
         const me = await api('admin.me');
         if (!me.ok) throw new Error(me.error);
-        setContent(me.content); S.admin.me = me; S.materials = me.materials || [];
+        setContent(me.content); S.admin.me = me; S.materials = me.materials || []; S.admin.settings = me.settings; S.admin.feedbackSheet = me.feedbackSheet;
         if (location.hash.indexOf('#wb/') === 0) render(); else go('wb/cohortes');
       }
       else await loadParticipant();
@@ -327,9 +344,11 @@
     if (!ADMIN && Object.keys(S.pending).length) flushBeacon();
     clearTimeout(S.saveTimer);
     S.token = null; S.me = null; S.answers = {}; S.pending = {}; S.msg = msg || '';
-    S.admin = { me: null, cohorts: null, detail: {}, workbooks: {}, showPins: {}, addMode: 'one', lastAdd: null, filter: '' };
+    S.cop = freshCop(); S.doubts = []; S.followup = [];
+    S.admin = freshAdmin();
     store.del(tokenKey);
     closeLayer();
+    updateFab();
     saveEl.className = 'wb-save';
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
     renderLogin();
@@ -346,6 +365,8 @@
       setContent(out.content);
       S.me = { profile: out.profile, cohort: out.cohort };
       S.materials = out.materials || [];
+      S.cop = freshCop(); S.cop.state = out.copilot || { mode: 'hidden' };
+      S.doubts = out.doubts || []; S.followup = out.followup || []; S.facilitator = out.facilitator || 'tu facilitador';
       S.answers = out.answers || {};
       let local = null;
       try { local = JSON.parse(store.get(pendingKey()) || 'null'); } catch (e) { }
@@ -443,12 +464,16 @@
       }
       if (rec) actions += '<a class="wb-btn wb-btn--sm' + (inf.state === 'ended' ? '' : ' wb-btn--ghost') + '" href="' + esc(rec) + '" target="_blank" rel="noopener">' + ICON.play + 'Ver repetición</a>';
       else if (inf.state === 'ended') actions += '<p class="wb-small">La repetición estará disponible aquí muy pronto.</p>';
+      const fb = feedbackUrl(s);
+      if (fb && (inf.state === 'live' || inf.state === 'ended')) actions += '<a class="wb-btn wb-btn--sm' + (inf.state === 'ended' ? ' wb-btn--lime wb-btn--flat' : ' wb-btn--ghost') + '" href="' + esc(fb) + '" target="_blank" rel="noopener" data-feedback="' + s.n + '">' + ICON.star + 'Dar feedback de la sesión</a>';
       const when = s.date ? dayLong(s.date) + (s.start ? ' · ' + fmtRange(s.start, s.end) : '') : 'Fecha por confirmar';
+      const cal = inf.state !== 'ended' && s.date && s.start ? '<div class="wb-session-cal">' + ICON.cal + '<span>Agregar a</span><a href="' + esc(gcalUrl(s)) + '" target="_blank" rel="noopener">Google Calendar</a>' +
+        '<button type="button" data-act="ics" data-n="' + s.n + '">Outlook o Apple</button></div>' : '';
       return '<article class="wb-session is-' + inf.state + (i === next ? ' is-next' : '') + '" data-session="' + s.n + '">' +
         '<div class="wb-session-top"><span class="wb-kicker">Sesión ' + s.n + '</span>' + badge + '</div>' +
         '<strong class="wb-session-title">' + esc(s.title) + '</strong>' +
         '<span class="wb-session-when">' + esc(when) + (s.start ? ' <small>hora CDMX</small>' : '') + '</span>' +
-        '<div class="wb-session-actions">' + actions + '</div></article>';
+        '<div class="wb-session-actions">' + actions + '</div>' + cal + '</article>';
     }).join('');
     return '<section class="wb-sec" data-sessions><span class="wb-pill">Sesiones en vivo</span>' +
       '<h2 class="wb-h2">Únete en vivo o ve la repetición</h2>' +
@@ -497,12 +522,13 @@
       '</div>' +
       (pre ? '<section class="wb-sec">' + guideCard + '</section>' : '') +
       sessionsHtml(sessions) +
+      doubtsHomeHtml() +
       '<section class="wb-sec"><span class="wb-pill">Cómo usar tu workbook</span><div class="wb-steps">' + steps + '</div></section>' +
       '<section class="wb-sec"><span class="wb-pill">Tu ruta de 5 días</span><h2 class="wb-h2">' + esc(CONTENT.route.intro) + '</h2>' +
       '<div class="wb-routes">' + route + '</div>' +
       '<div class="wb-callout"><strong>' + esc(CONTENT.route.note.t) + '</strong><span>' + esc(CONTENT.route.note.d) + '</span></div></section>' +
       '<section class="wb-sec"><span class="wb-pill">Los 8 Blueprints</span><h2 class="wb-h2">Tu Sistema de Ingresos, un Blueprint a la vez</h2><div class="wb-bpgrid">' + cards + '</div></section>' +
-      '<section class="wb-sec wb-three">' + (pre ? '' : guideCard) +
+      '<section class="wb-sec wb-three">' + (T.end && Date.now() > T.end ? followupCard() : (pre ? '' : guideCard)) +
       '<a class="wb-card wb-card--link" href="#wb/plan"><span class="wb-pill wb-pill--ink">Cierre</span><strong class="wb-h3">' + esc(CONTENT.plan.title) + '</strong><span class="wb-muted">' + pr.plan + ' de 9 campos completos</span>' + ICON.right + '</a>' +
       '<a class="wb-card wb-card--link" href="#wb/biblioteca"><span class="wb-pill wb-pill--ink">Bono del Sprint</span><strong class="wb-h3">' + esc(CONTENT.library.title) + '</strong><span class="wb-muted">Los recursos de cada Blueprint</span>' + ICON.right + '</a>' +
       '</section>'
@@ -521,19 +547,20 @@
 
   function bpHtml(bp, readOnly) {
     const secs = bp.sections.map((s) =>
-      '<article class="wb-section" id="wb-' + s.id + '">' +
+      '<article class="wb-section' + (filled(S.answers[s.id]) ? ' has-answer' : '') + '" id="wb-' + s.id + '">' +
       '<div class="wb-section-head"><span class="wb-num">' + s.n + '</span><h3 class="wb-h3">' + esc(s.title) + '</h3></div>' +
       '<p class="wb-q">' + esc(s.question) + '</p>' +
       (readOnly ? '' : prepRefsHtml(s)) +
       '<div class="wb-label">Tu respuesta</div>' + textarea(s.id, 'Escribe aquí tu respuesta (2 a 3 líneas son suficientes)…', readOnly) +
-      (readOnly ? '' : '<div class="wb-prompt"><div class="wb-prompt-head"><span>Copiloto IA</span>' + copyBtn(s.prompt) + '</div><p>' + esc(s.prompt) + '</p></div>') +
+      (readOnly ? '' : sectionBar(s.id) +
+        '<div class="wb-prompt"><div class="wb-prompt-head"><span>' + (copOn() ? 'Prompt para tu IA' : 'Copiloto IA') + '</span><span class="wb-prompt-btns">' + copPromptBtn(s.prompt, s.id) + copyBtn(s.prompt) + '</span></div><p>' + esc(s.prompt) + '</p></div>') +
       '</article>').join('');
     const done = filled(S.answers[bp.doneId]);
     return (readOnly ? '' : '<div class="wb-take"><span>Qué te llevas</span><p>' + esc(bp.takeaway) + '</p></div>') +
       '<div class="wb-sec"><div class="wb-label wb-label--top">Resultado esperado</div><div class="wb-vs">' +
       '<div class="wb-vs-bad"><b>Mal hecho</b><p>' + esc(bp.bad) + '</p></div>' +
       '<div class="wb-vs-good"><b>Bien hecho</b><p>' + esc(bp.good) + '</p></div></div></div>' +
-      (readOnly ? '' : '<div class="wb-master"><div class="wb-prompt-head"><span>Copiloto IA · Prompt maestro</span>' + copyBtn(bp.masterPrompt) + '</div><p>' + esc(bp.masterPrompt) + '</p></div>') +
+      (readOnly ? '' : '<div class="wb-master"><div class="wb-prompt-head"><span>' + (copOn() ? 'Prompt maestro para tu IA' : 'Copiloto IA · Prompt maestro') + '</span><span class="wb-prompt-btns">' + copPromptBtn(bp.masterPrompt, '') + copyBtn(bp.masterPrompt) + '</span></div><p>' + esc(bp.masterPrompt) + '</p></div>') +
       '<section class="wb-sec"><span class="wb-pill">Completa cada sección</span><h2 class="wb-h2">' + bp.sections.length + ' secciones</h2>' +
       (readOnly ? '' : '<p class="wb-muted">Con 2 a 3 líneas por respuesta es suficiente; usa el prompt del Copiloto para avanzar más rápido. Todo se guarda solo.</p>') +
       (!readOnly && bp.callout ? '<div class="wb-bpcallout">' + ICON.compass + '<div><strong>' + esc(bp.callout.title) + '</strong><p>' + esc(bp.callout.text) + '</p></div></div>' : '') +
@@ -542,7 +569,7 @@
         '<a class="wb-kitcta" href="#wb/bp/' + bp.n + '/kit"><span><span class="wb-kicker">Siguiente paso</span><strong>Compara tu borrador con el kit de práctica</strong>' +
         '<span class="wb-muted">Un ejemplo resuelto, una rúbrica de 5 puntos y los errores más comunes.</span></span>' + ICON.right + '</a>' +
         '<button type="button" class="wb-done' + (done ? ' is-on' : '') + '" data-act="toggle" data-field="' + bp.doneId + '" aria-pressed="' + done + '">' +
-        '<span class="wb-check">' + ICON.check + '</span><span>Terminé el Blueprint ' + bp.n + ' y estoy listo para el siguiente.</span></button>');
+        '<span class="wb-check">' + ICON.check + '</span><span>Terminé el Blueprint ' + bp.n + ' y estoy listo para el siguiente.</span></button>' + copNudgeHtml(bp));
   }
 
   function bpHead(bp) {
@@ -633,7 +660,11 @@
       '<div class="wb-crumbs"><a href="#wb/inicio">' + ICON.left + 'Inicio</a></div>' +
       '<div class="wb-bphead"><span class="wb-pill">Cierre del Sprint</span><h1 class="wb-h1">' + esc(CONTENT.plan.title) + '</h1>' +
       '<p class="wb-lead">' + esc(CONTENT.plan.intro) + '</p></div>' +
+      (copOn() ? '<div class="wb-secbar wb-secbar--top"><span class="wb-secbar-label">' + ICON.spark + 'Copiloto</span><button type="button" class="wb-chipbtn" data-act="cop" data-kind="chip" data-msg="Ayúdame a armar mi plan de 90 días con lo que decidí en mis Blueprints.">Ayúdame a armar mi plan</button>' +
+        '<button type="button" class="wb-chipbtn" data-act="cop" data-kind="coherence" data-msg="¿Mi plan de 90 días es coherente con lo que decidí en mis 8 Blueprints?">¿Es coherente con mis Blueprints?</button></div>' : '') +
       planHtml(false) +
+      '<a class="wb-kitcta" href="#wb/seguimiento"><span><span class="wb-kicker">Después del Sprint</span><strong>Seguimiento a los 30, 60 y 90 días</strong>' +
+      '<span class="wb-muted">' + (S.followup.length ? 'Te escribimos el ' + S.followup.map((f) => shortDate(parseIso(f.date)).toLowerCase()).join(', ').replace(/, ([^,]*)$/, ' y $1') + ' para revisar cómo vas.' : 'Te escribimos cada 30 días para revisar cómo vas.') + '</span></span>' + ICON.right + '</a>' +
       '<nav class="wb-pager"><a href="#wb/bp/8">' + ICON.left + '<span><small>Anterior</small>' + esc(BPS[7].title) + '</span></a>' +
       '<a class="is-next" href="#wb/inicio"><span><small>Listo</small>Volver al inicio</span>' + ICON.right + '</a></nav>'
     );
@@ -735,8 +766,11 @@
     }
     return '<section class="wb-clock is-post"><div class="wb-clock-main"><span class="wb-kicker">Sprint terminado</span>' +
       '<strong class="wb-clock-title">Ahora toca ejecutar</strong><span class="wb-clock-sub">Tu workbook sigue aquí: ajústalo con datos reales en las próximas semanas.</span></div>' +
+      (openCheckin() ? '<div class="wb-clock-side"><span class="wb-pill wb-pill--lime">Seguimiento</span><strong class="wb-h3">Tu check-in de ' + openCheckin().n + ' días está abierto</strong>' +
+        '<p>Tres minutos para contarnos cómo vas con tu plan: qué lograste, qué te frenó y qué ajustas.</p>' +
+        '<a class="wb-btn wb-btn--lime wb-btn--sm" href="#wb/seguimiento/' + openCheckin().n + '">Hacer mi check-in' + ICON.right + '</a></div></section>' :
       '<div class="wb-clock-side"><strong class="wb-h3">Tu plan de 90 días</strong><p>Lo que decidiste en los 8 Blueprints, convertido en acciones con responsable y fecha.</p>' +
-      '<a class="wb-btn wb-btn--lime wb-btn--sm" href="#wb/plan">Abrir mi plan de 90 días' + ICON.right + '</a></div></section>';
+      '<a class="wb-btn wb-btn--lime wb-btn--sm" href="#wb/plan">Abrir mi plan de 90 días' + ICON.right + '</a></div></section>');
   }
 
   /* ===================== PREPARACIÓN ===================== */
@@ -968,11 +1002,11 @@
       '<section class="wb-kit-sec wb-rubric"><div class="wb-row"><h2 class="wb-h3">Rúbrica: revisa tu Blueprint ' + bp.n + '</h2><b class="wb-rubcount" data-rubcount="' + bp.n + '">' + done + '/5</b></div>' +
       '<p class="wb-small wb-small--top">Marca lo que ya cumple tu respuesta. Lo que quede sin marcar es lo primero que debes corregir.</p>' +
       rubricIds(bp).map((id, i) => toggleRow(id, k.rubric[i])).join('') +
-      toggleRow(bp.doneId, 'Terminé el Blueprint ' + bp.n + ' y estoy listo para el siguiente.', 'wb-done') + '</section>' +
+      toggleRow(bp.doneId, 'Terminé el Blueprint ' + bp.n + ' y estoy listo para el siguiente.', 'wb-done') + copNudgeHtml(bp) + '</section>' +
       '<section class="wb-kit-sec"><h2 class="wb-h3">3 errores comunes</h2><div class="wb-errors">' +
       k.errors.map((e) => '<div class="wb-error">' + ICON.alert + '<p><strong>' + esc(e.t) + '</strong> ' + esc(e.d) + '</p></div>').join('') + '</div></section>' +
-      '<section class="wb-kit-sec"><div class="wb-master"><div class="wb-prompt-head"><span>Copiloto IA · Prompts para revisar tu trabajo</span></div>' +
-      k.prompts.map((p) => '<div class="wb-kprompt"><p>' + esc(p) + '</p>' + copyBtn(p) + '</div>').join('') + '</div></section>' +
+      '<section class="wb-kit-sec"><div class="wb-master"><div class="wb-prompt-head"><span>' + (copOn() ? 'Prompts para revisar tu trabajo' : 'Copiloto IA · Prompts para revisar tu trabajo') + '</span></div>' +
+      k.prompts.map((p) => '<div class="wb-kprompt"><p>' + esc(p) + '</p><span class="wb-prompt-btns">' + copPromptBtn(p, '') + copyBtn(p) + '</span></div>').join('') + '</div></section>' +
       (k.variant ? '<section class="wb-kit-sec"><div class="wb-variant"><span>Variante en otra industria</span><p>' + esc(k.variant) + '</p></div></section>' : '') +
       '</div>';
   }
@@ -1140,6 +1174,417 @@
   }
   function closeLayer() { const l = root && root.querySelector('.wb-layer'); if (l) { l.classList.remove('is-on'); l.innerHTML = ''; } }
 
+  /* ===================== MARKDOWN (respuestas del copiloto) ===================== */
+  function mdInline(s) {
+    return esc(s)
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, u) => {
+        u = u.replace(/&amp;/g, '&');
+        if (/^#wb\/[\w/-]*$/.test(u)) return '<a href="' + esc(u) + '" data-act="cop-link">' + t + '</a>';
+        const ok = safeUrl(u);
+        return ok ? '<a href="' + esc(ok) + '" target="_blank" rel="noopener">' + t + '</a>' : t;
+      })
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(«])\*([^*\n]+)\*(?=[\s).,;:!?»]|$)/g, '$1<em>$2</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+  }
+  function md(src) {
+    let html = '', list = null, para = [];
+    const flushP = () => { if (para.length) { html += '<p>' + para.map(mdInline).join('<br>') + '</p>'; para = []; } };
+    const flushL = () => { if (list) { html += '<' + list.t + '>' + list.items.map((x) => '<li>' + mdInline(x) + '</li>').join('') + '</' + list.t + '>'; list = null; } };
+    String(src || '').replace(/\r/g, '').split('\n').forEach((ln) => {
+      const t = ln.trim();
+      let m;
+      if (!t) { flushP(); flushL(); return; }
+      if ((m = t.match(/^#{1,4}\s+(.*)$/))) { flushP(); flushL(); html += '<h4>' + mdInline(m[1]) + '</h4>'; return; }
+      if ((m = t.match(/^[-*•]\s+(.*)$/))) { flushP(); if (!list || list.t !== 'ul') { flushL(); list = { t: 'ul', items: [] }; } list.items.push(m[1]); return; }
+      if ((m = t.match(/^\d+[.)]\s+(.*)$/))) { flushP(); if (!list || list.t !== 'ol') { flushL(); list = { t: 'ol', items: [] }; } list.items.push(m[1]); return; }
+      if (/^(---+|\*\*\*+)$/.test(t)) { flushP(); flushL(); html += '<hr>'; return; }
+      flushL(); para.push(t);
+    });
+    flushP(); flushL();
+    return html;
+  }
+
+  /* ===================== COPILOTO IA (participante) ===================== */
+  const copState = () => (S.cop && S.cop.state) || { mode: 'hidden' };
+  const copOn = () => !ADMIN && !!S.me && copState().mode === 'active';
+  const copReady = () => copOn() && copState().status === 'ok';
+
+  function updateFab() {
+    const slot = root && root.querySelector('.wb-fab-slot');
+    if (!slot) return;
+    let html = '';
+    if (ADMIN) {
+      const r = route();
+      if (S.token && CONTENT && S.admin.me && ((r[1] === 'cohorte' && r[2]) || (r[1] === 'participante' && r[2]))) {
+        html = '<button type="button" class="wb-fab" data-act="fc-open">' + ICON.spark + '<span>Copiloto del facilitador</span></button>';
+      }
+    } else if (S.me && S.token) {
+      const st = copState();
+      if (st.mode === 'active') html = '<button type="button" class="wb-fab" data-act="cop-open" aria-label="Abrir tu Copiloto IA">' + ICON.spark + '<span>Copiloto</span></button>';
+      else if (st.mode === 'locked') html = '<button type="button" class="wb-fab wb-fab--locked" data-act="cop-open" aria-label="Copiloto IA (no disponible)">' + ICON.lock + '<span>Copiloto</span></button>';
+    }
+    slot.innerHTML = html;
+  }
+
+  // Etiqueta legible de un campo del workbook.
+  function fieldLabelC(id) {
+    const hit = sectionById(id);
+    if (hit) return 'Blueprint ' + hit.bp.n + ' · ' + hit.bp.n + '.' + hit.s.n + ' ' + hit.s.title;
+    let m = String(id).match(/^PLAN_(D\d+_\d+)_(\w+)$/);
+    if (m) {
+      const per = CONTENT.plan.periods.find((p) => p.id === m[1]), f = CONTENT.plan.fields.find((x) => x.id === m[2]);
+      return 'Plan de 90 días · ' + (per ? per.label : '') + ' · ' + (f ? f.label : '');
+    }
+    m = String(id).match(/^SEG(\d+)_(\w+)$/);
+    if (m) { const q = CONTENT.followup.questions.find((x) => x.id === m[2]); return 'Check-in de ' + m[1] + ' días · ' + (q ? q.label : m[2]); }
+    const pf = prepField(id);
+    return pf ? 'Preparación · ' + pf.label : id;
+  }
+  function hrefForField(id) {
+    const hit = sectionById(id);
+    if (hit) return '#wb/bp/' + hit.bp.n;
+    if (/^PLAN_/.test(id)) return '#wb/plan';
+    const m = String(id).match(/^SEG(\d+)_/);
+    if (m) return '#wb/seguimiento/' + m[1];
+    return '#wb/guia/prep';
+  }
+
+  function sectionBar(id) {
+    const hit = sectionById(id);
+    const t = hit ? hit.s.title : '';
+    return '<div class="wb-secbar">' +
+      (copOn() ? '<span class="wb-secbar-label">' + ICON.spark + 'Copiloto</span>' +
+        '<button type="button" class="wb-chipbtn is-empty-only" data-act="cop" data-kind="start" data-field="' + id + '" data-msg="' + esc('Ayúdame a empezar «' + t + '».') + '">Ayúdame a empezar</button>' +
+        '<button type="button" class="wb-chipbtn is-filled-only" data-act="cop" data-kind="review" data-field="' + id + '" data-msg="' + esc('Revisa mi respuesta de «' + t + '» con la rúbrica.') + '">Revisa mi respuesta</button>' +
+        '<button type="button" class="wb-chipbtn is-filled-only" data-act="cop" data-kind="concrete" data-field="' + id + '" data-msg="' + esc('Ayúdame a hacer más concreta mi respuesta de «' + t + '».') + '">Hazla más concreta</button>' : '') +
+      '<button type="button" class="wb-chipbtn wb-chipbtn--ghost" data-act="doubt-open" data-field="' + id + '">' + ICON.help + 'Duda para el taller</button>' +
+      '</div><div data-doubt-slot="' + id + '"></div>';
+  }
+  function copPromptBtn(prompt, field) {
+    if (!copOn()) return '';
+    return '<button type="button" class="wb-copy wb-copy--cop" data-act="cop" data-kind="prompt"' + (field ? ' data-field="' + field + '"' : '') +
+      ' data-msg="' + esc('Trabajemos este prompt del workbook con mis datos: «' + prompt + '»') + '">' + ICON.spark + '<span>Hacerlo con mi copiloto</span></button>';
+  }
+  const nudgeKey = (n) => 'agwb:nudge:' + (S.me ? S.me.profile.id : '') + ':' + n;
+  function copNudgeHtml(bp) {
+    if (!copOn() || !filled(S.answers[bp.doneId]) || store.get(nudgeKey(bp.n))) return '';
+    return '<div class="wb-copnudge" data-nudge="' + bp.n + '">' + ICON.spark + '<div><strong>¿Quieres que tu copiloto revise el Blueprint ' + bp.n + '?</strong>' +
+      '<span>Lo compara con la rúbrica del kit y te dice qué corregir primero.</span></div>' +
+      '<div class="wb-actions"><button type="button" class="wb-btn wb-btn--sm" data-act="cop" data-kind="bp-review" data-msg="' + esc('Revisa mi Blueprint ' + bp.n + ' completo con la rúbrica y dime qué corregir primero.') + '">Revisar con el copiloto</button>' +
+      '<button type="button" class="wb-icon" data-act="nudge-off" data-n="' + bp.n + '" aria-label="Ocultar">' + ICON.x + '</button></div></div>';
+  }
+
+  function copChips() {
+    const r = route();
+    if (r[1] === 'bp' && BPS[Number(r[2]) - 1]) {
+      const n = Number(r[2]), bp = BPS[n - 1];
+      const out = [['chip', 'Explícame el Blueprint ' + n + ' en 3 líneas', 'Explícame el Blueprint ' + n + ' (' + bp.title + ') en 3 líneas y por qué va en este orden.'],
+        ['chip', '¿Por dónde empiezo?', '¿Por dónde empiezo el Blueprint ' + n + ' con lo que ya tengo en mi workbook?'],
+        ['bp-review', 'Revisa mi Blueprint ' + n, 'Revisa mi Blueprint ' + n + ' completo con la rúbrica y dime qué corregir primero.']];
+      if (n >= 2) out.push(['coherence', '¿Cuadra con los anteriores?', '¿Mi Blueprint ' + n + ' es coherente con lo que escribí en los Blueprints anteriores?']);
+      if (r[3] === 'kit') out[0] = ['chip', 'Explícame el caso del kit', 'Explícame el caso resuelto del kit del Blueprint ' + n + ' y qué debo copiar de él.'];
+      return out;
+    }
+    if (r[1] === 'guia') return [['chip', 'Resúmeme la guía en 5 puntos', 'Resúmeme la guía previa en 5 puntos.'], ['chip', 'Ayúdame con mi preparación', 'Ayúdame a completar mi preparación antes del kick-off.']];
+    if (r[1] === 'plan') return [['chip', 'Ayúdame a armar mi plan', 'Ayúdame a armar mi plan de 90 días con lo que decidí en mis Blueprints.']];
+    if (r[1] === 'seguimiento') return [['chip', 'Ayúdame con mi check-in', 'Ayúdame a preparar mi check-in: qué logré contra mi plan y qué ajusto.']];
+    return [['chip', '¿Qué me toca hoy?', '¿Qué me toca hacer hoy en el Sprint?'], ['chip', '¿Cuándo es mi próxima sesión?', '¿Cuándo es mi próxima sesión en vivo y qué debo llevar?'],
+      ['chip', '¿Cómo voy?', '¿Cómo voy con mi workbook y qué debería priorizar?']];
+  }
+
+  function copStatusText() {
+    const st = copState();
+    const until = st.until ? dayLong(st.until).toLowerCase() : '';
+    switch (st.status) {
+      case 'ok': return 'Te quedan <b>' + st.leftToday + '</b> mensajes hoy' + (until ? ' · disponible hasta el ' + esc(until) : '');
+      case 'limit-day': return 'Usaste tus ' + st.dailyLimit + ' mensajes de hoy. Mañana se renuevan.';
+      case 'limit': return 'Usaste los ' + st.limit + ' mensajes de tu Sprint. Si necesitas más, pídeselo a ' + esc(S.facilitator) + '.';
+      case 'expired': return 'Tu copiloto estuvo disponible hasta el ' + esc(until) + '. Tu conversación queda aquí para consultarla.';
+      case 'paused': return 'El copiloto está en pausa por el momento. Intenta más tarde.';
+      default: return '';
+    }
+  }
+
+  function copWelcome() {
+    return { r: 'a', i: -1, t: 'Hola, ' + first(S.me.profile.name) + '. Soy tu copiloto del Sprint. Puedo explicarte cualquier parte del contenido, ayudarte a arrancar una sección con tus datos o revisar tus respuestas con la rúbrica de cada kit.\n\nLo que te proponga no se guarda hasta que tú lo insertes.', p: [], d: '' };
+  }
+
+  function propHtml(m, p, j) {
+    const key = (m.ts || m.i) + ':' + j, done = S.cop.applied[key], cur = S.answers[p.field] || '';
+    const act = (mode, primary, label) => '<button type="button" class="wb-btn wb-btn--sm' + (primary ? '' : ' wb-btn--ghost') + '" data-act="cop-apply" data-i="' + m.i + '" data-j="' + j + '" data-mode="' + mode + '">' + label + '</button>';
+    return '<div class="wb-prop" data-prop="' + esc(key) + '"><div class="wb-prop-head"><span class="wb-kicker">Propuesta para</span><strong>' + esc(fieldLabelC(p.field)) + '</strong></div>' +
+      '<div class="wb-prop-text">' + esc(p.text) + '</div><div class="wb-prop-actions">' +
+      (done ? '<span class="wb-ok">' + ICON.check + (done === 'append' ? 'Agregado a tu respuesta' : 'Insertado en tu respuesta') + '</span>' +
+        '<a href="' + hrefForField(p.field) + '" data-act="cop-goto" data-field="' + esc(p.field) + '">Ver en mi workbook</a>' :
+        (filled(cur) ? act('replace', p.mode !== 'append', 'Reemplazar mi respuesta') + act('append', p.mode === 'append', 'Agregar al final') : act('replace', true, 'Insertar en mi respuesta')) +
+        copyBtn(p.text, 'Copiar')) + '</div></div>';
+  }
+  function copDoubtHtml(m) {
+    const sent = S.cop.doubtSent[m.ts || m.i];
+    return '<div class="wb-prop wb-prop--doubt"><div class="wb-prop-head"><span class="wb-kicker">Duda para el taller</span><strong>La revisa ' + esc(S.facilitator) + ' en vivo</strong></div>' +
+      (sent ? '<p class="wb-ok">' + ICON.check + esc(sent) + '</p>' :
+        '<textarea class="wb-ta wb-ta--sm" data-doubt-text="' + m.i + '" rows="3" maxlength="1500">' + esc(m.d) + '</textarea>' +
+        '<div class="wb-prop-actions"><button type="button" class="wb-btn wb-btn--sm" data-act="cop-doubt" data-i="' + m.i + '">' + ICON.send + 'Enviar mi duda</button></div>') + '</div>';
+  }
+  function copMsgHtml(m) {
+    if (m.r === 'u') return '<div class="wb-msg wb-msg--u"><p>' + esc(m.t).replace(/\n/g, '<br>') + '</p></div>';
+    if (m.r === 'err') return '<div class="wb-msg wb-msg--err">' + ICON.alert + '<p>' + esc(m.t) + '</p></div>';
+    return '<div class="wb-msg wb-msg--a"><div class="wb-md">' + md(m.t) + '</div>' + (m.p || []).map((p, j) => propHtml(m, p, j)).join('') + (m.d ? copDoubtHtml(m) : '') + '</div>';
+  }
+
+  async function openCopilot(opts) {
+    opts = opts || {};
+    const st = copState();
+    const layer = root.querySelector('.wb-layer');
+    const locked = st.mode !== 'active';
+    layer.innerHTML = '<div class="wb-overlay" data-act="close-layer"></div>' +
+      '<aside class="wb-drawer wb-cop" role="dialog" aria-modal="true" aria-label="Copiloto IA">' +
+      '<div class="wb-drawer-head"><div><span class="wb-pill wb-pill--lime">' + ICON.spark + 'Copiloto IA</span><h2 class="wb-h2">Tu copiloto del Sprint</h2></div><div class="wb-drawer-btns">' +
+      (locked ? '' : '<button type="button" class="wb-icon" data-act="cop-reset" title="Nueva conversación" aria-label="Nueva conversación">' + ICON.reset + '</button>') +
+      '<button type="button" class="wb-icon" data-act="close-layer" aria-label="Cerrar">' + ICON.x + '</button></div></div>' +
+      '<div class="wb-cop-body" data-cop-body></div></aside>';
+    layer.classList.add('is-on');
+    const body = layer.querySelector('[data-cop-body]');
+    if (locked) {
+      body.innerHTML = '<div class="wb-cop-locked">' + ICON.lock + '<h3 class="wb-h3">El Copiloto IA no está activo en tu Sprint</h3><p>' + esc(st.message || '') + '</p>' +
+        '<ul><li>Te explica el contenido, las sesiones y cada Blueprint.</li><li>Te ayuda a arrancar cada sección con tus propios datos.</li><li>Revisa tus respuestas con la rúbrica de cada kit.</li></ul></div>';
+      return;
+    }
+    if (!S.cop.thread) {
+      body.innerHTML = '<div class="wb-center"><span class="wb-spin"></span><p>Abriendo tu copiloto…</p></div>';
+      try {
+        const out = await api('copilot.open');
+        if (!out.ok) throw new Error(out.error);
+        S.cop.thread = out.thread; S.cop.state = out.state;
+      } catch (e) {
+        if (e.code === 'auth') return;
+        body.innerHTML = '<div class="wb-center"><p>No pudimos abrir tu copiloto.</p><button type="button" class="wb-btn wb-btn--sm" data-act="cop-open">Intentar de nuevo</button></div>';
+        return;
+      }
+      if (!layer.querySelector('[data-cop-body]')) return;   // se cerró mientras cargaba
+    }
+    body.innerHTML = '<p class="wb-cop-status" data-cop-status></p><div class="wb-cop-msgs" data-cop-msgs aria-live="polite"></div><div class="wb-cop-chips" data-cop-chips></div>' +
+      '<form class="wb-cop-form" data-form="cop" novalidate><textarea class="wb-cop-input" name="msg" rows="1" maxlength="4000" placeholder="Pregúntale lo que quieras del Sprint…" aria-label="Escribe tu mensaje"></textarea>' +
+      '<button type="submit" class="wb-cop-send" aria-label="Enviar" data-submit>' + ICON.send + '</button></form>' +
+      '<p class="wb-cop-note">Es una IA: revisa lo que propone antes de usarlo. Agora puede leer estas conversaciones para mejorar el programa.</p>';
+    const inp = body.querySelector('.wb-cop-input');
+    inp.value = S.cop.draft || '';
+    copRefresh();
+    if (opts.message) copSend(opts.message, opts.ctx);
+    else if (!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)) try { inp.focus({ preventScroll: true }); } catch (e) { }
+  }
+
+  function copRefresh() {
+    const layer = root.querySelector('.wb-layer');
+    const msgs = layer.querySelector('[data-cop-msgs]');
+    if (!msgs || !S.cop.thread) return;
+    const st = copState(), ready = copReady();
+    layer.querySelector('[data-cop-status]').innerHTML = copStatusText();
+    layer.querySelector('[data-cop-status]').className = 'wb-cop-status' + (st.status === 'ok' ? '' : ' is-warn');
+    const list = S.cop.thread.length ? S.cop.thread : [copWelcome()];
+    msgs.innerHTML = list.map(copMsgHtml).join('') +
+      (S.cop.busy ? '<div class="wb-msg wb-msg--a wb-msg--typing"><span class="wb-dots"><i></i><i></i><i></i></span><small data-typing>Pensando…</small></div>' : '');
+    layer.querySelector('[data-cop-chips]').innerHTML = ready && !S.cop.busy ? copChips().map((c) =>
+      '<button type="button" class="wb-chipbtn" data-act="cop" data-kind="' + c[0] + '" data-msg="' + esc(c[2]) + '">' + esc(c[1]) + '</button>').join('') : '';
+    const form = layer.querySelector('.wb-cop-form');
+    form.hidden = st.status === 'expired';
+    form.querySelector('textarea').disabled = !ready;
+    form.querySelector('button').disabled = !ready || S.cop.busy;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  const COP_ERRORS = {
+    'limit-day': 'Llegaste al límite de mensajes de hoy. Mañana se renuevan.', limit: 'Usaste todos los mensajes de tu Sprint.',
+    expired: 'Tu copiloto ya no está disponible.', paused: 'El copiloto está en pausa por el momento. Intenta más tarde.',
+    busy: 'Hay mucha actividad en este momento. Intenta de nuevo en unos segundos.', forbidden: 'Tu copiloto no está activo.'
+  };
+
+  async function copSend(text, ctx) {
+    text = String(text || '').trim();
+    if (!text || S.cop.busy || !copReady()) return;
+    ctx = Object.assign({ route: location.hash.replace(/^#/, '') || 'wb/inicio', kind: 'chat' }, ctx || {});
+    S.cop.busy = true;
+    const temp = { r: 'u', t: text, i: -2 };
+    S.cop.thread.push(temp);
+    const inp = root.querySelector('.wb-cop-input');
+    if (inp && inp.value.trim() === text) { inp.value = ''; S.cop.draft = ''; inp.style.height = ''; }
+    copRefresh();
+    const slow = setTimeout(() => { const el = root.querySelector('[data-typing]'); if (el) el.textContent = 'Sigo pensando… las respuestas con propuesta tardan unos segundos.'; }, 9000);
+    try {
+      if (Object.keys(S.pending).length) { clearTimeout(S.saveTimer); await saveNow(); }
+      const out = await api('copilot.send', { message: text, context: ctx });
+      S.cop.thread.pop();
+      if (out.state) S.cop.state = out.state;
+      if (!out.ok) {
+        S.cop.thread.push({ r: 'err', t: out.message || COP_ERRORS[out.error] || 'El copiloto no pudo responder. Intenta de nuevo.', i: -3 });
+        S.cop.draft = text;
+        const i2 = root.querySelector('.wb-cop-input'); if (i2 && !i2.value) i2.value = text;
+      } else {
+        S.cop.thread = out.thread || S.cop.thread.concat([{ r: 'u', t: text, i: out.reply.i - 1, f: ctx.field || '' }, out.reply]);
+      }
+    } catch (e) {
+      S.cop.thread.pop();
+      if (e.code === 'auth') return;
+      S.cop.thread.push({ r: 'err', t: 'No pudimos conectar. Revisa tu internet e intenta de nuevo.', i: -3 });
+      S.cop.draft = text;
+    } finally {
+      clearTimeout(slow);
+      S.cop.busy = false;
+      copRefresh();
+      updateFab();
+    }
+  }
+
+  function copFromButton(t) {
+    const kind = t.getAttribute('data-kind') || 'chat', field = t.getAttribute('data-field') || '';
+    const ctx = { kind: kind, field: field };
+    const msg = t.getAttribute('data-msg') || '';
+    const layerOpen = root.querySelector('.wb-layer .wb-cop');
+    if (layerOpen && S.cop.thread) return copSend(msg, ctx);
+    return openCopilot({ message: msg, ctx: ctx });
+  }
+
+  function applyProposal(i, j, mode) {
+    const m = (S.cop.thread || []).find((x) => x.i === i && x.r === 'a');
+    if (!m || !m.p || !m.p[j]) return;
+    const p = m.p[j], cur = S.answers[p.field] || '';
+    const val = mode === 'append' && filled(cur) ? cur.replace(/\s+$/, '') + '\n\n' + p.text : p.text;
+    setAnswer(p.field, val);
+    view.querySelectorAll('[data-field="' + p.field + '"]').forEach((el) => {
+      if (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT') return;
+      el.value = val;
+      if (el.tagName === 'TEXTAREA') autosize(el);
+      const art = el.closest('.wb-section');
+      if (art) { art.classList.toggle('has-answer', filled(val)); art.classList.remove('is-flash'); void art.offsetWidth; art.classList.add('is-flash'); }
+    });
+    const c = view.querySelector('[data-bpcount]');
+    if (c) { const b = bpProgress(BPS[Number(c.getAttribute('data-bpcount')) - 1], S.answers); c.textContent = b.n + '/' + b.total; }
+    updatePrepCount();
+    const key = (m.ts || m.i) + ':' + j;
+    S.cop.applied[key] = mode;
+    const card = root.querySelector('.wb-layer [data-prop="' + key + '"]');
+    if (card) card.outerHTML = propHtml(m, p, j);
+    toast('Listo: quedó en tu respuesta');
+  }
+
+  /* ===================== DUDAS PARA EL TALLER ===================== */
+  function nextSessionC() {
+    const ses = (S.me && S.me.cohort && S.me.cohort.sessions) || [], now = Date.now();
+    return ses.find((s) => { const inf = sessionInfo(s, now); return inf.state !== 'ended' && inf.state !== 'tbd'; }) || null;
+  }
+  function sessionShort(s) { return s ? s.title + ' · ' + dayLong(s.date).toLowerCase() + (s.start ? ', ' + fmtTime(s.start).t + ' ' + fmtTime(s.start).ap : '') : ''; }
+
+  function doubtForm(field) {
+    const s = nextSessionC();
+    return '<form class="wb-doubtform" data-form="doubt"' + (field ? ' data-field="' + field + '"' : '') + ' novalidate>' +
+      '<label class="wb-field"><span>¿Qué quieres que revisemos en el taller?</span><textarea class="wb-ta wb-ta--sm" name="text" rows="3" maxlength="1500" placeholder="Escribe tu duda en una o dos líneas…"></textarea></label>' +
+      '<p class="wb-small wb-small--top">' + (s ? 'La verá ' + esc(S.facilitator) + ' para el ' + esc(sessionShort(s)) + ' (hora CDMX).' : 'La verá ' + esc(S.facilitator) + ' y te responderá aquí.') +
+      (field ? ' Va con tu respuesta de esta sección para dar contexto.' : '') + '</p>' +
+      '<p class="wb-err" data-err></p><div class="wb-actions"><button class="wb-btn wb-btn--sm" type="submit" data-submit>' + ICON.send + 'Enviar mi duda</button>' +
+      '<button class="wb-btn wb-btn--sm wb-btn--ghost" type="button" data-act="cancel-form">Cancelar</button></div></form>';
+  }
+  const DOUBT_CHIP = { 'Pendiente': '', 'Vista en taller': ' wb-chip--done', 'Resuelta': ' wb-chip--done' };
+  function doubtItemHtml(d, withdraw) {
+    return '<div class="wb-doubt"><div class="wb-doubt-top"><span class="wb-chip' + (DOUBT_CHIP[d.status] || '') + '">' + esc(d.status) + '</span>' +
+      (d.section ? '<span class="wb-muted">' + esc(d.section) + '</span>' : '') + '<span class="wb-muted">' + esc(relTime(d.date)) + '</span></div>' +
+      '<p>' + esc(d.text) + '</p>' + (d.reply ? '<div class="wb-doubt-reply"><b>Respuesta de Agora</b><p>' + esc(d.reply) + '</p></div>' : '') +
+      (withdraw && d.status === 'Pendiente' ? '<button type="button" class="wb-linkbtn" data-act="doubt-withdraw" data-id="' + esc(d.id) + '">Retirar</button>' : '') + '</div>';
+  }
+  function doubtsHomeHtml() {
+    const s = nextSessionC();
+    if (!S.doubts.length && !s) return '';
+    return '<section class="wb-sec" data-doubts-home><div class="wb-row"><div><span class="wb-pill">Dudas para el taller</span>' +
+      '<h2 class="wb-h2">¿Algo que quieras revisar en vivo?</h2></div>' +
+      (s ? '<button type="button" class="wb-btn wb-btn--ghost wb-btn--sm" data-act="doubt-open" data-field="">' + ICON.help + 'Nueva duda</button>' : '') + '</div>' +
+      '<p class="wb-muted wb-mt">' + (s ? esc(S.facilitator) + ' las revisa en el ' + esc(sessionShort(s)) + '. También puedes enviarlas desde cada sección de tus Blueprints.' : 'Aquí ves el estado de tus dudas.') + '</p>' +
+      '<div data-doubt-slot=""></div>' +
+      (S.doubts.length ? '<div class="wb-doubts">' + S.doubts.map((d) => doubtItemHtml(d, true)).join('') + '</div>' : '') + '</section>';
+  }
+
+  /* ===================== CALENDARIO Y FEEDBACK ===================== */
+  function utcStamp(ms) { return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+  function sessionRange(s) { const a = mxMs(s.date, s.start), b = s.end ? mxMs(s.date, s.end) : a + 2 * 3600e3; return [a, b]; }
+  function gcalUrl(s) {
+    const r = sessionRange(s);
+    const details = 'Sprint Ejecutivo · Agora Growth\n' + (safeUrl(s.meet) ? 'Únete aquí: ' + s.meet + '\n' : 'La liga para unirte está en tu workbook.\n') + 'Tu workbook: ' + CFG.workbookUrl;
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Sprint Ejecutivo · ' + s.title) +
+      '&dates=' + utcStamp(r[0]) + '/' + utcStamp(r[1]) + '&details=' + encodeURIComponent(details) + '&location=' + encodeURIComponent(safeUrl(s.meet) || CFG.workbookUrl) + '&ctz=' + encodeURIComponent(MX_TZ);
+  }
+  function downloadIcs(s) {
+    const r = sessionRange(s), c = S.me.cohort;
+    const e = (x) => String(x).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Agora Growth//Sprint Ejecutivo//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+      'UID:sprint-' + (c && c.id || 'c') + '-' + s.n + '@agoragrowth.com', 'DTSTAMP:' + utcStamp(Date.now()), 'DTSTART:' + utcStamp(r[0]), 'DTEND:' + utcStamp(r[1]),
+      'SUMMARY:' + e('Sprint Ejecutivo · ' + s.title),
+      'DESCRIPTION:' + e('Sprint Ejecutivo · Agora Growth\n' + (safeUrl(s.meet) ? 'Únete aquí: ' + s.meet + '\n' : 'La liga para unirte está en tu workbook.\n') + 'Tu workbook: ' + CFG.workbookUrl),
+      'LOCATION:' + e(safeUrl(s.meet) || CFG.workbookUrl), 'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY', 'DESCRIPTION:' + e(s.title), 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'Sprint-Ejecutivo-sesion-' + s.n + '.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  // Typeform con campos ocultos (email, nombre, cohorte y sesión) para que la respuesta llegue identificada.
+  function feedbackUrl(s) {
+    const u = safeUrl(s && s.feedback);
+    if (!u || !S.me) return '';
+    const q = 'email=' + encodeURIComponent(S.me.profile.email || '') + '&nombre=' + encodeURIComponent(S.me.profile.name || '') +
+      '&cohorte=' + encodeURIComponent((S.me.cohort && S.me.cohort.name) || '') + '&sesion=' + s.n;
+    return u + (u.indexOf('#') >= 0 ? '&' : '#') + q;
+  }
+
+  /* ===================== SEGUIMIENTO DEL PLAN DE 90 DÍAS ===================== */
+  function checkins() {
+    const today = mxToday();
+    return (S.followup || []).map((f) => {
+      const cp = CONTENT.followup.checkpoints.find((x) => x.n === f.n) || {};
+      return Object.assign({}, cp, f, { open: today >= f.date, sent: filled(S.answers['SEG' + f.n + '_ENVIADO']) });
+    });
+  }
+  function openCheckin() { return checkins().filter((c) => c.open && !c.sent).pop() || null; }
+  function followupCard() {
+    const oc = openCheckin(), list = checkins(), done = list.filter((c) => c.sent).length;
+    return '<a class="wb-card wb-card--link wb-card--guide" href="#wb/seguimiento' + (oc ? '/' + oc.n : '') + '"><span class="wb-pill' + (oc ? '' : ' wb-pill--ink') + '">' + (oc ? 'Check-in abierto' : 'Después del Sprint') + '</span>' +
+      '<strong class="wb-h3">' + esc(CONTENT.followup.title) + '</strong><span class="wb-muted">' + (list.length ? done + ' de ' + list.length + ' check-ins enviados' : 'Check-ins a los 30, 60 y 90 días') + '</span>' + ICON.right + '</a>';
+  }
+
+  function renderFollowup(focus) {
+    const FU = CONTENT.followup, list = checkins();
+    const cards = list.map((c) => {
+      const per = CONTENT.plan.periods.find((p) => p.id === c.period);
+      const goal = S.answers['PLAN_' + c.period + '_OBJETIVO'], acts = S.answers['PLAN_' + c.period + '_ACCIONES'];
+      const id = (k) => 'SEG' + c.n + '_' + k;
+      const chip = c.sent ? '<span class="wb-chip wb-chip--done">' + ICON.check + 'Enviado</span>' : c.open ? '<span class="wb-chip">Abierto</span>' : '<span class="wb-chip wb-chip--muted">Se abre el ' + esc(dayLong(c.date).toLowerCase()) + '</span>';
+      let body = '<div class="wb-fu-goal"><span class="wb-kicker">Tu plan · ' + esc(per ? per.label : '') + '</span>' +
+        (filled(goal) ? '<p><b>Objetivo:</b> ' + esc(goal) + '</p>' : '<p class="wb-muted">Aún no escribes el objetivo de este periodo. <a href="#wb/plan">Ir a mi plan</a></p>') +
+        (filled(acts) ? '<p><b>Acciones clave:</b> ' + esc(acts) + '</p>' : '') + '</div>';
+      if (c.open || c.sent) {
+        const st = S.answers[id('ESTADO')] || '';
+        body += '<div class="wb-field"><span>' + esc(FU.statusLabel) + '</span><div class="wb-fu-status" role="radiogroup">' + FU.status.map((x) =>
+          '<button type="button" class="wb-chipbtn' + (st === x ? ' is-on' : '') + '" role="radio" aria-checked="' + (st === x) + '" data-act="fu-status" data-field="' + id('ESTADO') + '" data-value="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div></div>' +
+          FU.questions.map((q) => '<label class="wb-field"><span>' + esc(c.n === 90 && q.label90 ? q.label90 : q.label) + '</span>' + (q.hint ? '<em class="wb-hint">' + esc(q.hint) + '</em>' : '') +
+            '<textarea class="wb-ta wb-ta--sm" data-field="' + id(q.id) + '" rows="2" maxlength="5000">' + esc(S.answers[id(q.id)] || '') + '</textarea></label>').join('') +
+          toggleRow(id('AYUDA'), FU.help) +
+          (copOn() && copReady() ? '<div class="wb-secbar"><span class="wb-secbar-label">' + ICON.spark + 'Copiloto</span><button type="button" class="wb-chipbtn" data-act="cop" data-kind="chip" data-msg="' + esc('Ayúdame con mi check-in de ' + c.n + ' días: compara lo que logré con mi plan y sugiéreme qué ajustar.') + '">Ayúdame con este check-in</button></div>' : '') +
+          '<div class="wb-actions">' + (c.sent ? '<span class="wb-ok">' + ICON.check + 'Enviado el ' + esc(dayLong(S.answers[id('ENVIADO')]).toLowerCase() || '') + '. Puedes seguir editándolo.</span>' :
+            '<button type="button" class="wb-btn" data-act="fu-send" data-n="' + c.n + '">' + esc(FU.send) + '</button>') + '</div>';
+      } else {
+        body += '<p class="wb-small">Te escribimos ese día para recordártelo.</p>';
+      }
+      return '<section class="wb-card wb-fu' + (c.open && !c.sent ? ' is-open' : '') + '" id="wb-fu-' + c.n + '"><div class="wb-row"><div><span class="wb-kicker">Día ' + c.n + '</span><h2 class="wb-h3">' + esc(c.title) + '</h2></div>' + chip + '</div>' + body + '</section>';
+    }).join('');
+    show(
+      topBar() +
+      '<div class="wb-crumbs"><a href="#wb/inicio">' + ICON.left + 'Inicio</a></div>' +
+      '<div class="wb-bphead"><span class="wb-pill">Después del Sprint</span><h1 class="wb-h1">' + esc(FU.title) + '</h1><p class="wb-lead">' + esc(FU.intro) + '</p></div>' +
+      (cards ? '<div class="wb-fus">' + cards + '</div>' : '<div class="wb-empty"><strong>Las fechas de tus check-ins aparecerán cuando tu cohorte tenga sus sesiones.</strong></div>') +
+      '<nav class="wb-pager"><a href="#wb/plan">' + ICON.left + '<span><small>Tu plan</small>' + esc(CONTENT.plan.title) + '</span></a><a class="is-next" href="#wb/inicio"><span><small>Listo</small>Volver al inicio</span>' + ICON.right + '</a></nav>'
+    );
+    const el = focus && view.querySelector('#wb-fu-' + focus);
+    if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { el.scrollIntoView(); } }, 60);
+  }
+
   /* ===================== ADMIN ===================== */
   function adminTop() {
     return '<div class="wb-top"><div class="wb-hello"><span class="wb-kicker">Panel de Agora · Workbook</span><strong>' + esc(S.admin.me && S.admin.me.name ? 'Hola, ' + first(S.admin.me.name) : 'Panel de admin') + '</strong></div>' +
@@ -1161,6 +1606,8 @@
         const out = await api('admin.overview');
         if (!out.ok) throw new Error(out.message || out.error);
         S.admin.cohorts = out.cohorts; S.admin.cohorts._at = Date.now();
+        if (out.settings) S.admin.settings = out.settings;
+        if (out.feedbackSheet) S.admin.feedbackSheet = out.feedbackSheet;
       } catch (e) { if (e.code !== 'auth') renderError(e); return; }
       if (route()[1] !== 'cohortes') return;
     }
@@ -1172,13 +1619,15 @@
         '<span class="wb-muted">Kick-off: ' + (k ? esc(shortDate(k) + ' ' + k.getFullYear()) : '—') + '</span>' +
         cohortSessionsLine(c.sessions) +
         '<div class="wb-cohort-stats"><span><b>' + c.participants + '</b> ' + (c.participants === 1 ? 'participante' : 'participantes') + '</span><span><b>' + c.avgProgress + '%</b> avance promedio</span><span><b>' + c.finished + '</b> con los 8 Blueprints</span></div>' +
-        bar(c.avgProgress) + '</a>';
+        bar(c.avgProgress) +
+        ((c.copilotOn || c.doubtsPending) ? '<div class="wb-cohort-extra">' + (c.copilotOn ? '<span>' + ICON.spark + c.copilotOn + ' con copiloto · US$' + money2(c.copilotCost) + '</span>' : '') +
+          (c.doubtsPending ? '<span class="wb-warn">' + ICON.help + c.doubtsPending + (c.doubtsPending === 1 ? ' duda pendiente' : ' dudas pendientes') + '</span>' : '') + '</div>' : '') + '</a>';
     }).join('');
     show(
       adminTop() +
       '<div class="wb-bphead wb-row"><div><span class="wb-pill">Cohortes</span><h1 class="wb-h1">Sprint Ejecutivo</h1></div>' +
       '<button type="button" class="wb-btn" data-act="new-cohort">' + ICON.plus + 'Nueva cohorte</button></div>' +
-      '<div data-newcohort></div>' +
+      '<div data-newcohort></div>' + copSettingsHtml() +
       (list.length ? '<div class="wb-cohorts">' + cards + '</div>' :
         '<div class="wb-empty"><strong>Todavía no hay cohortes.</strong><span>Crea la primera para empezar a dar de alta participantes.</span></div>')
     );
@@ -1209,13 +1658,16 @@
       '<label class="wb-field"><span>A <em>(CDMX)</em></span><input class="wb-input" name="' + prefix + 'end" type="time" step="900" value="' + esc(s.end || '') + '"></label></div>' +
       '<label class="wb-field"><span>Liga de Google Meet <em>(o de la invitación)</em></span><input class="wb-input" name="' + prefix + 'meet" type="url" inputmode="url" maxlength="500" placeholder="https://meet.google.com/…" value="' + esc(s.meet || '') + '"></label>' +
       (opts && opts.recording ? '<label class="wb-field"><span>Liga de la grabación <em>(Google Drive)</em></span><input class="wb-input" name="' + prefix + 'recording" type="url" inputmode="url" maxlength="500" placeholder="https://drive.google.com/…" value="' + esc(s.recording || '') + '"></label>' +
-        '<p class="wb-small">Comparte la grabación en Drive como «Cualquier persona con el enlace puede ver»; si no, los participantes no podrán abrirla.</p>' : '');
+        '<p class="wb-small">Comparte la grabación en Drive como «Cualquier persona con el enlace puede ver»; si no, los participantes no podrán abrirla.</p>' +
+        '<label class="wb-field"><span>Formulario de feedback <em>(Typeform)</em></span><input class="wb-input" name="' + prefix + 'feedback" type="url" inputmode="url" maxlength="500" placeholder="https://…typeform.com/to/…" value="' + esc(s.feedback || '') + '"></label>' +
+        '<p class="wb-small">Les aparece en la tarjeta de la sesión desde que empieza. Si lo dejas vacío, esta sesión no lleva formulario.</p>' : '');
   }
 
   function readSessionForm(F, prefix) {
     const v = (k) => (F[prefix + k] ? F[prefix + k].value.trim() : undefined);
     const s = { title: v('title'), date: v('date'), start: v('start'), end: v('end'), meet: v('meet') };
     if (F[prefix + 'recording']) s.recording = v('recording');
+    if (F[prefix + 'feedback']) s.feedback = v('feedback');
     return s;
   }
 
@@ -1243,6 +1695,7 @@
         const out = await api('admin.cohort.detail', { id: id });
         if (!out.ok) throw new Error(out.error === 'not_found' ? 'Esa cohorte no existe.' : (out.message || out.error));
         S.admin.detail[id] = out; out._at = Date.now();
+        if (out.settings) S.admin.settings = out.settings;
       } catch (e) { if (e.code !== 'auth') renderError(e); return; }
       if (route()[2] !== id) return;
     }
@@ -1259,7 +1712,10 @@
       '<div class="wb-actions"><button type="button" class="wb-btn wb-btn--ghost" data-act="edit-cohort">Editar</button>' +
       '<button type="button" class="wb-btn wb-btn--ghost" data-act="toggle-cohort">' + (c.status === 'Cerrada' ? 'Reabrir' : 'Cerrar cohorte') + '</button></div></div>' +
       '<div data-editcohort></div>' +
+      autoCard(d) +
       sessionsAdmin(c) +
+      doubtsAdmin(d) +
+      followupAdmin(d) +
       addPanel(c) +
       '<section class="wb-sec"><div class="wb-row"><div><span class="wb-pill">Participantes</span></div>' +
       (d.participants.length > 2 ? '<label class="wb-search wb-search--inline">' + ICON.search + '<input type="search" data-filter value="' + esc(S.admin.filter) + '" placeholder="Buscar por nombre, correo o empresa" aria-label="Buscar participante"></label>' : '') +
@@ -1268,7 +1724,7 @@
         '<div class="wb-empty"><strong>Aún no hay participantes activos.</strong><span>Agrégalos arriba: uno por uno o pegando una lista.</span></div>') +
       '<div class="wb-empty" data-nomatch hidden><strong>Nadie coincide con la búsqueda.</strong></div>' +
       (inactive.length ? '<details class="wb-inactive"><summary>Quitados (' + inactive.length + ')</summary><div class="wb-people">' + inactive.map(personCard).join('') + '</div></details>' : '') +
-      '</section>'
+      '</section>' + questionsPanel(null)
     );
     filterPeople();
   }
@@ -1284,6 +1740,7 @@
         '<div class="wb-sesslinks">' +
         (meet ? '<a href="' + esc(meet) + '" target="_blank" rel="noopener">' + ICON.video + 'Meet</a>' : (inf.state === 'ended' ? '' : '<b class="wb-warn">Falta liga de Meet</b>')) +
         (rec ? '<a href="' + esc(rec) + '" target="_blank" rel="noopener">' + ICON.play + 'Grabación</a>' : (inf.state === 'ended' ? '<b class="wb-warn">Falta la grabación</b>' : '<span class="wb-muted">Grabación: después de la sesión</span>')) +
+        (safeUrl(s.feedback) ? '<a href="' + esc(s.feedback) + '" target="_blank" rel="noopener">' + ICON.star + 'Feedback</a>' : '<span class="wb-muted">Sin formulario de feedback</span>') +
         '</div>' +
         '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="edit-session" data-n="' + s.n + '">' + (inf.state === 'ended' && !rec ? 'Agregar grabación' : 'Editar') + '</button>' +
         '<div class="wb-sessform-slot" data-sess-slot></div></div>';
@@ -1348,9 +1805,11 @@
       bar(p.progress) + '<div class="wb-bpdots" aria-label="Blueprints terminados">' + chips + '</div></div>' +
       '<div class="wb-person-meta"><span>' + (p.lastActivity ? 'Última actividad ' + esc(relTime(p.lastActivity)) : (p.lastLogin ? 'Entró ' + esc(relTime(p.lastLogin)) : 'Aún no entra')) + '</span>' +
       '<span>' + (p.sent ? 'Acceso enviado ' + esc(relTime(p.sent)) : 'Acceso no enviado') + '</span></div>' +
+      (inactive ? '' : personCopHtml(p)) +
       '<div class="wb-person-actions">' +
       (inactive ? '<button type="button" class="wb-btn wb-btn--sm" data-act="reactivate" data-id="' + esc(p.id) + '">Reactivar</button>' :
         '<a class="wb-btn wb-btn--sm" href="#wb/participante/' + esc(p.id) + '">Ver workbook</a>' +
+        '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="fc-person" data-id="' + esc(p.id) + '">' + ICON.spark + 'Resumen con IA</button>' +
         '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="admin-pdf" data-id="' + esc(p.id) + '">PDF</button>' +
         '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="resend" data-id="' + esc(p.id) + '">Reenviar acceso</button>' +
         '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="copy" data-copy="' + esc(access) + '">Copiar acceso</button>' +
@@ -1370,7 +1829,10 @@
     const d = S.admin.detail[p.cohortId];
     if (!d) return;
     const i = d.participants.findIndex((x) => x.id === p.id);
-    if (i >= 0) d.participants[i] = p;
+    if (i < 0) return;
+    const prev = d.participants[i];
+    if (p.copilot && !p.copilot.state && prev.copilot) p.copilot.state = prev.copilot.state;
+    d.participants[i] = Object.assign({}, prev, p);
   }
 
   async function getWorkbook(id, force) {
@@ -1405,22 +1867,479 @@
       '<div class="wb-crumbs"><a href="#wb/cohorte/' + esc(p.cohortId) + '">' + ICON.left + esc(w.cohort ? w.cohort.name : 'Cohorte') + '</a></div>' +
       '<div class="wb-bphead wb-row"><div><span class="wb-pill">Solo lectura</span><h1 class="wb-h1">' + esc(p.name) + '</h1>' +
       '<p class="wb-lead">' + esc(p.email) + (p.company ? ' · ' + esc(p.company) : '') + (w.updated ? ' · Última actividad ' + esc(relTime(w.updated)) : '') + '</p></div>' +
-      '<div class="wb-actions"><button type="button" class="wb-btn" data-act="admin-pdf" data-id="' + esc(p.id) + '">' + ICON.download + 'Descargar PDF</button></div></div>' +
+      '<div class="wb-actions"><button type="button" class="wb-btn wb-btn--ghost" data-act="fc-person" data-id="' + esc(p.id) + '">' + ICON.spark + 'Resumen con IA</button><button type="button" class="wb-btn" data-act="admin-pdf" data-id="' + esc(p.id) + '">' + ICON.download + 'Descargar PDF</button></div></div>' +
       '<div class="wb-statrow"><div><b>' + pr.pct + '%</b><span>avance</span></div><div><b>' + pr.answered + '/' + pr.total + '</b><span>secciones</span></div>' +
       '<div><b>' + pr.done.length + '/8</b><span>Blueprints terminados</span></div><div><b>' + pr.plan + '/9</b><span>plan de 90 días</span></div>' +
       '<div><b>' + prep.n + '/' + prep.total + '</b><span>preparación</span></div><div><b>' + rub + '/40</b><span>rúbricas marcadas</span></div></div>' +
+      adminExtrasHtml(w) +
       prepBlock + blocks +
-      '<details class="wb-ro"' + (pr.plan ? ' open' : '') + '><summary><span class="wb-bpnum">90</span><span><strong>' + esc(CONTENT.plan.title) + '</strong><small>' + pr.plan + '/9 campos</small></span></summary>' + planHtml(true) + '</details>';
+      '<details class="wb-ro"' + (pr.plan ? ' open' : '') + '><summary><span class="wb-bpnum">90</span><span><strong>' + esc(CONTENT.plan.title) + '</strong><small>' + pr.plan + '/9 campos</small></span></summary>' + planHtml(true) + '</details>' +
+      adminFollowupHtml(w);
     S.answers = saved;
     show(html);
   }
 
+  /* ===================== ADMIN: COPILOTO, DUDAS Y SEGUIMIENTO ===================== */
+  const money2 = (n) => (Number(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const MODES = ['Activo', 'Bloqueado', 'Oculto'];
+
+  function copSettingsHtml() {
+    const st = S.admin.settings;
+    if (!st) return '';
+    const pct = st.budget > 0 ? Math.min(100, st.spent / st.budget * 100) : 100;
+    const state = !st.enabled ? 'Apagado' : !st.hasKey ? 'Falta la API key' : st.spent >= st.budget ? 'En pausa: se alcanzó el tope del mes' : 'Encendido';
+    const warn = [];
+    if (!st.hasKey) warn.push('Falta la API key de Claude: en Apps Script › Configuración del proyecto › Propiedades del script, agrega ANTHROPIC_API_KEY con tu key.');
+    if (!st.automations) warn.push('Los recordatorios y el seguimiento por correo no están programados: en Apps Script ejecuta «instalar» una vez.');
+    return '<section class="wb-card wb-copset"><div class="wb-row"><div class="wb-copset-main"><span class="wb-kicker">' + ICON.spark + 'Copiloto IA · ' + esc(st.model) + '</span>' +
+      '<strong>' + esc(state) + '</strong><span class="wb-muted">US$' + money2(st.spent) + ' de US$' + money2(st.budget) + ' este mes</span></div>' +
+      '<div class="wb-actions">' + (S.admin.feedbackSheet ? '<a class="wb-btn wb-btn--sm wb-btn--ghost" href="' + esc(S.admin.feedbackSheet) + '" target="_blank" rel="noopener">' + ICON.sheet + 'Respuestas de feedback</a>' : '') +
+      '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="cop-settings">Ajustes del copiloto</button></div></div>' +
+      bar(pct, pct >= 90 ? 'wb-bar--warn' : '') +
+      warn.map((w) => '<p class="wb-warnline">' + ICON.alert + '<span>' + esc(w) + '</span></p>').join('') +
+      (S.admin.settingsOpen ? '<form class="wb-form wb-copset-form" data-form="cop-settings" novalidate>' +
+        '<label class="wb-checkline"><input type="checkbox" name="enabled"' + (st.enabled ? ' checked' : '') + '><span>Copiloto encendido (si lo apagas, nadie lo puede usar: ni participantes ni facilitadores)</span></label>' +
+        '<label class="wb-field"><span>Tope de gasto al mes (USD)</span><input class="wb-input" name="budget" type="number" inputmode="decimal" min="0" step="1" value="' + esc(st.budget) + '"></label>' +
+        '<p class="wb-small wb-small--top">Al llegar al tope, el copiloto se pausa hasta el mes siguiente. Cada participante tiene ' + st.dailyLimit + ' mensajes al día y ' + st.sprintLimit + ' por Sprint; puedes cambiarlo en su tarjeta.</p>' +
+        '<p class="wb-err" data-err></p><div class="wb-actions"><button class="wb-btn wb-btn--sm" type="submit" data-submit>Guardar</button><button class="wb-btn wb-btn--sm wb-btn--ghost" type="button" data-act="cop-settings">Cancelar</button></div></form>' : '') +
+      '</section>';
+  }
+
+  function lastSessionDate(c) { const d = (c.sessions || []).filter((s) => s.date).map((s) => s.date).sort(); return d.length ? d[d.length - 1] : ''; }
+
+  function autoCard(d) {
+    const c = d.cohort, act = d.participants.filter((p) => p.status === 'Activo');
+    const on = act.filter((p) => p.copilot && p.copilot.state && p.copilot.state.mode === 'active');
+    const msgs = act.reduce((a, p) => a + ((p.copilot && p.copilot.used) || 0), 0), cost = act.reduce((a, p) => a + ((p.copilot && p.copilot.cost) || 0), 0);
+    const cur = c.copilot || c.copilotDefault || 'Oculto';
+    const last = lastSessionDate(c), until = last ? isoAdd(last, 1) : '';
+    const fu = (d.followupDates || []).map((f) => shortDate(parseIso(f.date)).toLowerCase()).join(', ').replace(/, ([^,]*)$/, ' y $1');
+    const fac = (S.admin.me && S.admin.me.facilitator) || 'Jaime';
+    return '<section class="wb-card wb-auto"><h2 class="wb-h3">Copiloto IA y correos automáticos</h2>' +
+      '<div class="wb-auto-row"><div><strong>' + ICON.spark + 'Copiloto IA para esta cohorte</strong><span class="wb-muted">' + on.length + ' de ' + act.length + ' con copiloto activo · ' + msgs + ' mensajes · US$' + money2(cost) +
+      (until ? ' · se apaga solo al terminar el ' + esc(dayLong(until).toLowerCase()) : '') + '</span></div>' +
+      '<select class="wb-input wb-input--sm wb-select" data-act-change="cohort-copilot" aria-label="Copiloto de la cohorte">' + MODES.map((m) => '<option' + (m === cur ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div>' +
+      '<p class="wb-small wb-small--top"><b>Activo:</b> lo usan. <b>Bloqueado:</b> ven el botón con candado y el mensaje «' + esc((S.admin.settings && S.admin.settings.lockedMessage) || '') + '». <b>Oculto:</b> no ven nada. Al cambiarlo aquí se aplica a todos; en la tarjeta de cada participante puedes hacer excepciones.</p>' +
+      '<label class="wb-checkline wb-auto-row"><input type="checkbox" data-act-change="cohort-reminders"' + (c.reminders ? ' checked' : '') + '><span><strong>Recordatorios de cada sesión por correo</strong><span class="wb-muted">Un día antes a las 5 pm y una hora antes (hora CDMX), con la liga de Meet y qué llevar.</span></span></label>' +
+      '<label class="wb-checkline wb-auto-row"><input type="checkbox" data-act-change="cohort-followup"' + (c.followup ? ' checked' : '') + '><span><strong>Seguimiento del plan de 90 días</strong><span class="wb-muted">' + (fu ? 'Check-ins el ' + esc(fu) : 'Check-ins a los 30, 60 y 90 días') + '. Si alguien pide ayuda, le llega un aviso a ' + esc(fac) + '.</span></span></label>' +
+      (S.admin.feedbackSheet ? '<a class="wb-linkline" href="' + esc(S.admin.feedbackSheet) + '" target="_blank" rel="noopener">' + ICON.sheet + 'Ver las respuestas de los formularios de feedback</a>' : '') +
+      '</section>';
+  }
+
+  const ADOUBT_CHIP = { 'Pendiente': '', 'Vista en taller': ' wb-chip--done', 'Resuelta': ' wb-chip--done' };
+  function adminDoubtCard(x) {
+    const ans = x.current || x.snapshot;
+    return '<article class="wb-adoubt" data-doubt="' + esc(x.id) + '"><div class="wb-doubt-top"><strong>' + esc(x.name) + '</strong>' +
+      (x.section ? '<span class="wb-muted">' + esc(x.section) + '</span>' : '<span class="wb-muted">Duda general</span>') +
+      '<span class="wb-muted">' + esc(relTime(x.date)) + '</span><span class="wb-chip' + (ADOUBT_CHIP[x.status] || '') + '">' + esc(x.status) + '</span></div>' +
+      '<p class="wb-adoubt-text">' + esc(x.text) + '</p>' +
+      (ans ? '<details class="wb-adoubt-ans"><summary>Su respuesta en esa sección</summary><p>' + esc(ans) + '</p>' +
+        (x.snapshot && x.current && x.snapshot !== x.current ? '<p class="wb-small"><b>Cuando preguntó decía:</b> ' + esc(x.snapshot) + '</p>' : '') + '</details>' : '') +
+      (x.reply ? '<div class="wb-doubt-reply"><b>Respuesta de Agora</b><p>' + esc(x.reply) + '</p></div>' : '') +
+      '<div class="wb-actions">' +
+      '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="proj-open" data-id="' + esc(x.id) + '">' + ICON.screen + 'Proyectar</button>' +
+      (x.status === 'Pendiente' ?
+        '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="doubt-status" data-id="' + esc(x.id) + '" data-status="Vista en taller">Vista en taller</button>' +
+        '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="doubt-status" data-id="' + esc(x.id) + '" data-status="Resuelta">Resuelta</button>' :
+        '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="doubt-status" data-id="' + esc(x.id) + '" data-status="Pendiente">Volver a pendiente</button>') +
+      '<button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="doubt-reply" data-id="' + esc(x.id) + '">' + (x.reply ? 'Editar respuesta' : 'Responder por escrito') + '</button>' +
+      '</div><div data-reply-slot></div></article>';
+  }
+
+  function doubtsAdmin(d) {
+    const all = d.doubts || [], pend = all.filter((x) => x.status === 'Pendiente');
+    const list = S.admin.doubtFilter === 'all' ? all : pend;
+    const ses = d.cohort.sessions || [];
+    const groups = {};
+    list.forEach((x) => { (groups[x.session || 0] = groups[x.session || 0] || []).push(x); });
+    const order = Object.keys(groups).map(Number).sort((a, b) => (a || 99) - (b || 99));
+    const f = S.admin.doubtFilter;
+    return '<section class="wb-sec" data-doubts-admin><div class="wb-row"><div><span class="wb-pill">Dudas para los talleres</span><h2 class="wb-h2">' +
+      (pend.length ? pend.length + (pend.length === 1 ? ' duda pendiente' : ' dudas pendientes') : 'Sin dudas pendientes') + '</h2></div>' +
+      '<div class="wb-actions">' + (all.length ? '<div class="wb-tabs" role="tablist"><button type="button" role="tab" aria-selected="' + (f !== 'all') + '" data-act="doubt-filter" data-f="pending">Pendientes (' + pend.length + ')</button>' +
+        '<button type="button" role="tab" aria-selected="' + (f === 'all') + '" data-act="doubt-filter" data-f="all">Todas (' + all.length + ')</button></div>' : '') +
+      (pend.length ? '<button type="button" class="wb-btn wb-btn--sm" data-act="proj-open">' + ICON.screen + 'Proyectar pendientes</button>' : '') + '</div></div>' +
+      (list.length ? order.map((n) => {
+        const s = n ? ses[n - 1] : null;
+        return '<h3 class="wb-doubt-group">' + (s ? 'Para la sesión ' + n + ' · ' + esc(s.title) + (s.date ? ' · ' + esc(shortDate(parseIso(s.date))) : '') : 'Después de las sesiones en vivo') + '</h3>' + groups[n].map(adminDoubtCard).join('');
+      }).join('') :
+        '<div class="wb-empty"><strong>' + (all.length ? 'Todas las dudas están atendidas.' : 'Todavía no hay dudas.') + '</strong><span>Los participantes las envían desde cada sección de sus Blueprints o desde su inicio.</span></div>') +
+      '</section>';
+  }
+
+  function followupAdmin(d) {
+    const dates = d.followupDates || [];
+    const last = lastSessionDate(d.cohort);
+    if (!dates.length || !last || mxToday() <= last) return '';
+    const act = d.participants.filter((p) => p.status === 'Activo');
+    const today = mxToday();
+    const cell = (p, f) => {
+      const x = (p.followup || {})[f.n] || {};
+      if (x.sent) return '<span class="wb-chip' + (x.status === 'Lo logré' ? ' wb-chip--done' : '') + '">' + esc(x.status || 'Enviado') + '</span>' + (x.help ? '<b class="wb-warn">' + ICON.flag + 'Pidió ayuda</b>' : '');
+      return today >= f.date ? '<span class="wb-muted">Pendiente</span>' : '<span class="wb-muted">—</span>';
+    };
+    const firstOpen = dates.filter((f) => today >= f.date).pop();
+    const answered = firstOpen ? act.filter((p) => ((p.followup || {})[firstOpen.n] || {}).sent).length : 0;
+    const helps = act.filter((p) => Object.keys(p.followup || {}).some((k) => p.followup[k].help)).length;
+    return '<section class="wb-sec"><span class="wb-pill">Seguimiento del plan de 90 días</span><h2 class="wb-h2">' +
+      (firstOpen ? answered + ' de ' + act.length + ' respondieron el check-in de ' + firstOpen.n + ' días' : 'El primer check-in es el ' + esc(dayLong(dates[0].date).toLowerCase())) + '</h2>' +
+      (helps ? '<p class="wb-muted wb-mt">' + helps + (helps === 1 ? ' persona pidió' : ' personas pidieron') + ' que las contacten.</p>' : '') +
+      '<div class="wb-table-wrap"><table class="wb-table wb-fu-table"><thead><tr><th>Participante</th>' + dates.map((f) => '<th>Día ' + f.n + '<small>' + esc(shortDate(parseIso(f.date))) + '</small></th>').join('') + '</tr></thead><tbody>' +
+      act.map((p) => '<tr><th scope="row"><a href="#wb/participante/' + esc(p.id) + '">' + esc(p.name) + '</a></th>' + dates.map((f) => '<td>' + cell(p, f) + '</td>').join('') + '</tr>').join('') +
+      '</tbody></table></div></section>';
+  }
+
+  function questionsPanel(pid) {
+    return '<details class="wb-ro wb-questions" data-questions="' + (pid || '') + '"><summary data-act="load-questions" data-pid="' + (pid || '') + '"><span class="wb-bpnum">' + ICON.spark + '</span><span><strong>' +
+      (pid ? 'Lo que le preguntó al copiloto' : 'Lo que preguntan al copiloto') + '</strong><small>Para detectar qué les cuesta</small></span></summary><div data-questions-body></div></details>';
+  }
+  function questionsListHtml(qs, pid) {
+    if (!qs.length) return '<p class="wb-muted">Todavía no hay preguntas.</p>';
+    return (pid ? '' : '<div class="wb-actions"><button type="button" class="wb-btn wb-btn--sm" data-act="fc-questions">' + ICON.spark + 'Analizar con el copiloto</button></div>') +
+      '<ul class="wb-qlist">' + qs.slice(0, 120).map((q) => '<li><div class="wb-doubt-top">' + (pid ? '' : '<strong>' + esc(q.name) + '</strong>') +
+        (q.context ? '<span class="wb-muted">' + esc(q.context) + '</span>' : '') + '<span class="wb-muted">' + esc(relTime(q.date)) + '</span></div><p>' + esc(q.text) + '</p></li>').join('') + '</ul>';
+  }
+
+  function personCopHtml(p) {
+    const c = p.copilot || {}, st = c.state || {};
+    const d = S.admin.detail[p.cohortId];
+    const cm = d ? (d.cohort.copilot || d.cohort.copilotDefault) : '';
+    const usage = st.mode === 'active' ? c.used + ' mensajes · US$' + money2(c.cost) + (st.until ? (st.status === 'expired' ? ' · terminó el ' : ' · hasta el ') + shortDate(parseIso(st.until)).toLowerCase() : '') +
+      (c.limit ? ' · límite ' + c.limit : '') : st.mode === 'locked' ? 'Ve el botón con candado' : 'No lo ve';
+    return '<div class="wb-person-cop"><span class="wb-label">' + ICON.spark + 'Copiloto</span>' +
+      '<select class="wb-input wb-input--sm wb-select" data-act-change="person-copilot" data-id="' + esc(p.id) + '" aria-label="Copiloto de ' + esc(p.name) + '">' +
+      '<option value=""' + (!c.mode ? ' selected' : '') + '>Como la cohorte (' + esc(cm) + ')</option>' + MODES.map((m) => '<option value="' + m + '"' + (c.mode === m ? ' selected' : '') + '>' + m + '</option>').join('') + '</select>' +
+      '<span class="wb-muted wb-small0">' + esc(usage) + '</span>' +
+      (st.mode === 'active' ? '<button type="button" class="wb-linkbtn" data-act="person-cop-adjust" data-id="' + esc(p.id) + '">Ajustar</button>' : '') + '</div><div data-copadj-slot></div>';
+  }
+
+  function adminExtrasHtml(w) {
+    const st = w.copilot || {}, p = w.participant, c = p.copilot || {};
+    const doubts = w.doubts || [];
+    return (st.mode === 'active' || c.used ? '<details class="wb-ro"><summary><span class="wb-bpnum">' + ICON.spark + '</span><span><strong>Copiloto IA</strong><small>' + c.used + ' mensajes · US$' + money2(c.cost) +
+      (st.until ? ' · ' + (st.status === 'expired' ? 'terminó el ' : 'hasta el ') + esc(shortDate(parseIso(st.until)).toLowerCase()) : '') + '</small></span></summary>' +
+      '<div data-questions-inline="' + esc(p.id) + '"><button type="button" class="wb-btn wb-btn--sm wb-btn--ghost" data-act="load-questions" data-pid="' + esc(p.id) + '">Ver lo que le preguntó</button></div></details>' : '') +
+      (doubts.length ? '<details class="wb-ro" open><summary><span class="wb-bpnum">' + ICON.help + '</span><span><strong>Sus dudas para el taller</strong><small>' + doubts.length + (doubts.length === 1 ? ' duda' : ' dudas') + '</small></span></summary>' +
+        '<div class="wb-doubts">' + doubts.map((x) => doubtItemHtml(x, false)).join('') + '</div></details>' : '');
+  }
+  function adminFollowupHtml(w) {
+    const dates = w.followupDates || [], a = w.answers || {};
+    const any = dates.some((f) => filled(a['SEG' + f.n + '_ENVIADO']) || filled(a['SEG' + f.n + '_ESTADO']));
+    if (!any) return '';
+    const FU = CONTENT.followup;
+    return '<details class="wb-ro" open><summary><span class="wb-bpnum">' + ICON.flag + '</span><span><strong>' + esc(FU.title) + '</strong><small>Check-ins</small></span></summary>' +
+      dates.map((f) => {
+        const g = (k) => a['SEG' + f.n + '_' + k] || '';
+        if (!filled(g('ESTADO')) && !filled(g('ENVIADO'))) return '';
+        return '<div class="wb-ro-item"><h4>Día ' + f.n + (filled(g('ENVIADO')) ? ' · enviado el ' + esc(shortDate(parseIso(g('ENVIADO')))) : ' · sin enviar') + (filled(g('AYUDA')) ? ' · <span class="wb-warn">pidió ayuda</span>' : '') + '</h4>' +
+          '<p><b>' + esc(FU.statusLabel) + '</b> ' + esc(g('ESTADO') || '—') + '</p>' +
+          FU.questions.map((q) => '<p class="wb-q"><b>' + esc(f.n === 90 && q.label90 ? q.label90 : q.label) + '</b></p><div class="wb-answer' + (filled(g(q.id)) ? '' : ' is-empty') + '">' + (filled(g(q.id)) ? esc(g(q.id)) : 'Sin respuesta.') + '</div>').join('') + '</div>';
+      }).join('') + '</details>';
+  }
+
+  /* ---------- Proyector de dudas ---------- */
+  function openProjector(cid, id) {
+    const d = S.admin.detail[cid];
+    if (!d) return;
+    const pend = d.doubts.filter((x) => x.status === 'Pendiente');
+    const list = id ? [id] : pend.map((x) => x.id);
+    if (!list.length) return;
+    S.admin.proj = { cid: cid, list: list, idx: 0, names: false };
+    renderProjector();
+    const el = root.querySelector('.wb-proj');
+    if (el && el.requestFullscreen) el.requestFullscreen().catch(() => { });
+  }
+  function renderProjector() {
+    const P0 = S.admin.proj, d = S.admin.detail[P0.cid];
+    const x = d.doubts.find((y) => y.id === P0.list[P0.idx]);
+    const layer = root.querySelector('.wb-layer');
+    if (!x) return closeProjector();
+    const ans = x.current || x.snapshot;
+    const wasFs = !!document.fullscreenElement;
+    const html = '<div class="wb-proj-top"><span>' + ICON.screen + 'Dudas para el taller · ' + (P0.idx + 1) + ' de ' + P0.list.length + '</span>' +
+      '<div class="wb-actions"><label class="wb-checkline wb-checkline--light"><input type="checkbox" data-act-change="proj-names"' + (P0.names ? ' checked' : '') + '><span>Mostrar nombres</span></label>' +
+      '<button type="button" class="wb-icon wb-icon--light" data-act="proj-close" aria-label="Cerrar">' + ICON.x + '</button></div></div>' +
+      '<div class="wb-proj-main"><span class="wb-proj-kicker">' + esc(x.section || 'Duda general') + '</span><p class="wb-proj-q">' + esc(x.text) + '</p>' +
+      (P0.names ? '<span class="wb-proj-who">' + esc(x.name) + '</span>' : '') +
+      (ans ? '<div class="wb-proj-ans"><span>Su respuesta</span><p>' + esc(ans) + '</p></div>' : '') + '</div>' +
+      '<div class="wb-proj-nav"><button type="button" class="wb-btn wb-btn--onDark" data-act="proj-prev"' + (P0.idx === 0 ? ' disabled' : '') + '>' + ICON.left + 'Anterior</button>' +
+      (x.status === 'Pendiente' ? '<button type="button" class="wb-btn wb-btn--lime wb-btn--flat" data-act="proj-seen">' + ICON.check + 'Marcar como vista</button>' : '<span class="wb-proj-done">' + ICON.check + esc(x.status) + '</span>') +
+      '<button type="button" class="wb-btn wb-btn--onDark" data-act="proj-next"' + (P0.idx >= P0.list.length - 1 ? ' disabled' : '') + '>Siguiente' + ICON.right + '</button></div>';
+    let el = layer.querySelector('.wb-proj');
+    if (el && wasFs) { el.innerHTML = html; return; }
+    layer.innerHTML = '<div class="wb-proj" role="dialog" aria-modal="true" aria-label="Dudas para el taller">' + html + '</div>';
+    layer.classList.add('is-on');
+  }
+  function projMove(n) {
+    const P0 = S.admin.proj;
+    if (!P0) return;
+    const i = Math.max(0, Math.min(P0.list.length - 1, P0.idx + n));
+    if (i !== P0.idx) { P0.idx = i; renderProjector(); }
+  }
+  function closeProjector() {
+    const cid = S.admin.proj && S.admin.proj.cid;
+    S.admin.proj = null;
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => { });
+    closeLayer();
+    if (cid && route()[2] === cid) adminCohort(cid);
+  }
+
+  function setDoubtLocal(cid, doubt) {
+    const d = S.admin.detail[cid];
+    if (!d) return;
+    const i = d.doubts.findIndex((x) => x.id === doubt.id);
+    if (i >= 0) d.doubts[i] = Object.assign({}, d.doubts[i], doubt, { current: d.doubts[i].current });
+  }
+  function refreshDoubts(cid) {
+    const sec = view.querySelector('[data-doubts-admin]'), d = S.admin.detail[cid];
+    if (sec && d) sec.outerHTML = doubtsAdmin(d);
+  }
+
+  /* ---------- Copiloto del facilitador ---------- */
+  function fcConv(cid) { return S.admin.fc[cid] || (S.admin.fc[cid] = { scope: 'cohort', pid: '', bps: '', msgs: [], busy: false }); }
+  function fcCohortId() {
+    const r = route();
+    if (r[1] === 'cohorte') return r[2];
+    if (r[1] === 'participante') { const w = S.admin.workbooks[r[2]]; return w ? w.participant.cohortId : null; }
+    return null;
+  }
+  function fcPeople(cid) {
+    const d = S.admin.detail[cid];
+    if (d) return d.participants.filter((p) => p.status === 'Activo');
+    const w = Object.keys(S.admin.workbooks).map((k) => S.admin.workbooks[k]).filter((x) => x.participant.cohortId === cid);
+    return w.map((x) => x.participant);
+  }
+  const FC_CHIPS = {
+    cohort: [['Prepárame el próximo taller', 'Prepárame el próximo taller: qué patrones veo en sus respuestas, a quién llamar y con qué pregunta, y qué dudas atender primero.'],
+      ['¿Quién va atrasado?', '¿Quién va atrasado y qué le digo para que se ponga al día?'],
+      ['Mejores respuestas', '¿Cuáles son las 3 mejores respuestas de la cohorte para usarlas como ejemplo en vivo, y por qué?']],
+    participant: [['Resumen antes del taller', 'Resúmeme cómo va antes del taller: fortalezas, huecos frente a la rúbrica y qué le preguntaría en vivo.'],
+      ['¿Qué le falta?', '¿Qué le falta para terminar sus Blueprints y por dónde debería empezar?']],
+    doubts: [['Agrúpalas por tema', 'Agrupa las dudas pendientes por tema y dime en qué orden responderlas en vivo, con una respuesta sugerida para cada grupo.']],
+    questions: [['¿Qué les cuesta más?', '¿Qué es lo que más les cuesta según lo que le preguntan al copiloto y qué conviene reforzar en el próximo taller?']]
+  };
+
+  function openFc(opts) {
+    opts = opts || {};
+    const cid = opts.cid || fcCohortId();
+    if (!cid) return;
+    const conv = fcConv(cid);
+    const r = route();
+    if (opts.scope && (opts.scope !== conv.scope || (opts.pid || '') !== conv.pid)) { conv.scope = opts.scope; conv.pid = opts.pid || ''; conv.msgs = []; }
+    else if (!opts.scope && r[1] === 'participante' && (conv.scope !== 'participant' || conv.pid !== r[2])) { conv.scope = 'participant'; conv.pid = r[2]; conv.msgs = []; }
+    S.admin.fcCid = cid;
+    const d = S.admin.detail[cid];
+    const name = d ? d.cohort.name : (S.admin.workbooks[r[2]] && S.admin.workbooks[r[2]].cohort ? S.admin.workbooks[r[2]].cohort.name : 'Cohorte');
+    const layer = root.querySelector('.wb-layer');
+    layer.innerHTML = '<div class="wb-overlay" data-act="close-layer"></div><aside class="wb-drawer wb-cop wb-fc" role="dialog" aria-modal="true" aria-label="Copiloto del facilitador">' +
+      '<div class="wb-drawer-head"><div><span class="wb-pill wb-pill--lime">' + ICON.spark + 'Copiloto del facilitador</span><h2 class="wb-h2">' + esc(name) + '</h2></div><div class="wb-drawer-btns">' +
+      '<button type="button" class="wb-icon" data-act="fc-reset" title="Nueva conversación" aria-label="Nueva conversación">' + ICON.reset + '</button>' +
+      '<button type="button" class="wb-icon" data-act="close-layer" aria-label="Cerrar">' + ICON.x + '</button></div></div>' +
+      '<div class="wb-cop-body"><div class="wb-fc-scope" data-fc-scope></div><div class="wb-cop-msgs" data-cop-msgs aria-live="polite"></div><div class="wb-cop-chips" data-cop-chips></div>' +
+      '<form class="wb-cop-form" data-form="fc" novalidate><textarea class="wb-cop-input wb-fc-input" name="msg" rows="1" maxlength="4000" placeholder="Pregúntale lo que necesites…" aria-label="Escribe tu pregunta"></textarea>' +
+      '<button type="submit" class="wb-cop-send" aria-label="Enviar" data-submit>' + ICON.send + '</button></form>' +
+      '<p class="wb-cop-note">Usa las respuestas del workbook, las dudas y lo que preguntan al copiloto. Revisa antes de compartir con los participantes.</p></div></aside>';
+    layer.classList.add('is-on');
+    fcRefresh();
+    if (opts.message) fcSend(opts.message);
+  }
+
+  function fcRefresh() {
+    const layer = root.querySelector('.wb-layer'), cid = S.admin.fcCid;
+    if (!layer.querySelector('.wb-fc') || !cid) return;
+    const conv = fcConv(cid), people = fcPeople(cid);
+    layer.querySelector('[data-fc-scope]').innerHTML =
+      '<label class="wb-field"><span>¿Sobre qué?</span><select class="wb-input wb-input--sm" data-act-change="fc-scope">' +
+      [['cohort', 'Toda la cohorte'], ['participant', 'Un participante'], ['doubts', 'Dudas para los talleres'], ['questions', 'Lo que preguntan al copiloto']].map((o) =>
+        '<option value="' + o[0] + '"' + (conv.scope === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>' +
+      (conv.scope === 'cohort' ? '<label class="wb-field"><span>Blueprints</span><select class="wb-input wb-input--sm" data-act-change="fc-bps">' +
+        '<option value="">Los de la próxima sesión</option>' + BPS.map((bp) => '<option value="' + bp.n + '"' + (conv.bps === String(bp.n) ? ' selected' : '') + '>Blueprint ' + bp.n + ' · ' + esc(bp.title) + '</option>').join('') +
+        '<option value="1,2,3,4,5,6,7,8"' + (conv.bps.length > 2 ? ' selected' : '') + '>Los 8 (más resumido)</option></select></label>' : '') +
+      (conv.scope === 'participant' ? '<label class="wb-field"><span>Participante</span><select class="wb-input wb-input--sm" data-act-change="fc-pid"><option value="">Elige…</option>' +
+        people.map((p) => '<option value="' + esc(p.id) + '"' + (conv.pid === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select></label>' : '');
+    const msgs = layer.querySelector('[data-cop-msgs]');
+    const intro = { r: 'a', t: 'Pregúntame lo que necesites para preparar los talleres o acompañar a alguien. Elige arriba sobre qué: toda la cohorte, un participante, las dudas o lo que le preguntan al copiloto.' };
+    msgs.innerHTML = (conv.msgs.length ? conv.msgs : [intro]).map((m) => m.r === 'a' && m.usd != null ?
+      '<div class="wb-msg wb-msg--a"><div class="wb-md">' + md(m.t) + '</div><div class="wb-fc-meta"><span class="wb-muted">' + esc(m.scope || '') + ' · US$' + (m.usd < 0.01 ? '<0.01' : money2(m.usd)) + '</span>' + copyBtn(m.t, 'Copiar') + '</div></div>' :
+      copMsgHtml(m)).join('') + (conv.busy ? '<div class="wb-msg wb-msg--a wb-msg--typing"><span class="wb-dots"><i></i><i></i><i></i></span><small>Revisando los datos de la cohorte…</small></div>' : '');
+    const ready = !conv.busy && (conv.scope !== 'participant' || conv.pid);
+    layer.querySelector('[data-cop-chips]').innerHTML = ready ? (FC_CHIPS[conv.scope] || []).map((c) => '<button type="button" class="wb-chipbtn" data-act="fc-chip" data-msg="' + esc(c[1]) + '">' + esc(c[0]) + '</button>').join('') : '';
+    layer.querySelector('.wb-cop-send').disabled = !ready;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  async function fcSend(text) {
+    const cid = S.admin.fcCid, conv = fcConv(cid);
+    text = String(text || '').trim();
+    if (!text || conv.busy) return;
+    if (conv.scope === 'participant' && !conv.pid) { toast('Elige a un participante'); return; }
+    const history = conv.msgs.filter((m) => m.r === 'u' || m.r === 'a').map((m) => ({ r: m.r, t: m.t })).slice(-10);
+    conv.msgs.push({ r: 'u', t: text });
+    conv.busy = true;
+    const inp = root.querySelector('.wb-fc-input'); if (inp) { inp.value = ''; inp.style.height = ''; }
+    fcRefresh();
+    try {
+      const out = await api('admin.copilot.ask', { cohortId: cid, scope: conv.scope, participantId: conv.pid, bps: conv.bps ? conv.bps.split(',').map(Number) : [], question: text, history: history });
+      if (out.settings) S.admin.settings = out.settings;
+      conv.msgs.push(out.ok ? { r: 'a', t: out.text, usd: out.usd, scope: out.scope } : { r: 'err', t: out.message || 'El copiloto no pudo responder.' });
+    } catch (e) {
+      if (e.code === 'auth') return;
+      conv.msgs.push({ r: 'err', t: 'No pudimos conectar. Intenta de nuevo.' });
+    } finally { conv.busy = false; fcRefresh(); }
+  }
+  function fcSubmit(form) { return fcSend(form.elements.msg.value); }
+
+  async function loadQuestions(t, pid) {
+    const cid = pid ? (findPerson(pid) ? findPerson(pid).cohortId : (S.admin.workbooks[pid] && S.admin.workbooks[pid].participant.cohortId)) : route()[2];
+    const key = cid + '|' + (pid || '');
+    const target = pid ? view.querySelector('[data-questions-inline="' + pid + '"]') : view.querySelector('[data-questions=""] [data-questions-body]');
+    if (!target) return;
+    if (!S.admin.questions[key]) {
+      target.innerHTML = '<p class="wb-muted"><span class="wb-spin"></span> Cargando…</p>';
+      try {
+        const out = await api('admin.copilot.questions', { cohortId: cid, participantId: pid || '' });
+        if (!out.ok) throw new Error(out.error);
+        S.admin.questions[key] = out.questions;
+      } catch (e) { if (e.code !== 'auth') target.innerHTML = '<p class="wb-bad">No se pudieron cargar.</p>'; return; }
+    }
+    target.innerHTML = questionsListHtml(S.admin.questions[key], pid);
+  }
+
+  async function onChange(e) {
+    const t = e.target, act = t.getAttribute('data-act-change');
+    if (act === 'proj-names') { if (S.admin.proj) { S.admin.proj.names = t.checked; renderProjector(); } return; }
+    if (act === 'fc-scope' || act === 'fc-bps' || act === 'fc-pid') {
+      const conv = fcConv(S.admin.fcCid);
+      if (act === 'fc-scope') { conv.scope = t.value; conv.msgs = []; if (t.value !== 'participant') conv.pid = ''; }
+      if (act === 'fc-bps') conv.bps = t.value;
+      if (act === 'fc-pid') { conv.pid = t.value; conv.msgs = []; }
+      return fcRefresh();
+    }
+    const cid = route()[2], d = S.admin.detail[cid];
+    if (act === 'cohort-copilot' && d) {
+      if (!window.confirm('¿Cambiar el copiloto de toda la cohorte a «' + t.value + '»? Se aplica a todos los participantes (también a las excepciones que hayas hecho).')) { t.value = d.cohort.copilot || d.cohort.copilotDefault; return; }
+      try {
+        const out = await api('admin.copilot.set', { cohortId: cid, mode: t.value });
+        if (!out.ok) { toast(out.message || 'No se pudo cambiar'); return; }
+        toast('Copiloto «' + t.value + '» para toda la cohorte');
+        S.admin.cohorts = null;
+        return adminCohort(cid, true);
+      } catch (err) { if (err.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+      return;
+    }
+    if ((act === 'cohort-reminders' || act === 'cohort-followup') && d) {
+      const key = act === 'cohort-reminders' ? 'reminders' : 'followup', data = { id: cid };
+      data[key] = t.checked;
+      try {
+        const out = await api('admin.cohort.update', data);
+        if (!out.ok) { toast(out.message || 'No se pudo guardar'); t.checked = !t.checked; return; }
+        d.cohort = out.cohort;
+        toast(key === 'reminders' ? (t.checked ? 'Recordatorios activados' : 'Recordatorios desactivados') : (t.checked ? 'Seguimiento activado' : 'Seguimiento desactivado'));
+      } catch (err) { if (err.code !== 'auth') { toast('No pudimos conectar. Intenta de nuevo.'); t.checked = !t.checked; } }
+      return;
+    }
+    if (act === 'person-copilot') {
+      const id = t.getAttribute('data-id');
+      try {
+        const out = await api('admin.copilot.set', { id: id, mode: t.value });
+        if (!out.ok) { toast(out.message || 'No se pudo cambiar'); return; }
+        replacePerson(out.participant); S.admin.cohorts = null;
+        toast('Copiloto de ' + first(out.participant.name) + ': ' + (t.value || 'como la cohorte'));
+        const card = t.closest('.wb-person');
+        if (card) card.outerHTML = personCard(out.participant);
+      } catch (err) { if (err.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+    }
+  }
+
+  async function onAdminExtraClick(e, t, act, id) {
+    if (act === 'cop-settings') { S.admin.settingsOpen = !S.admin.settingsOpen; const el = view.querySelector('.wb-copset'); if (el) el.outerHTML = copSettingsHtml(); return true; }
+    if (act === 'fc-open') { openFc(); return true; }
+    if (act === 'fc-person') {
+      const f = findPerson(id), w = S.admin.workbooks[id];
+      const cid = f ? f.cohortId : (w ? w.participant.cohortId : null), name = f ? f.p.name : (w ? w.participant.name : '');
+      openFc({ cid: cid, scope: 'participant', pid: id, message: 'Resúmeme cómo va ' + first(name) + ' antes del taller: fortalezas, huecos frente a la rúbrica y qué le preguntaría en vivo.' });
+      return true;
+    }
+    if (act === 'fc-questions') { openFc({ scope: 'questions', message: FC_CHIPS.questions[0][1] }); return true; }
+    if (act === 'fc-chip') { fcSend(t.getAttribute('data-msg')); return true; }
+    if (act === 'fc-reset') { const conv = fcConv(S.admin.fcCid); if (!conv.busy) { conv.msgs = []; fcRefresh(); } return true; }
+    if (act === 'load-questions') {
+      const pid = t.getAttribute('data-pid') || '';
+      if (!pid) { const det = t.closest('details'); if (det && det.open) return true; }   // al cerrar no recarga
+      loadQuestions(t, pid);
+      return true;
+    }
+    if (act === 'doubt-filter') { S.admin.doubtFilter = t.getAttribute('data-f'); refreshDoubts(route()[2]); return true; }
+    if (act === 'proj-open') { openProjector(route()[2], id); return true; }
+    if (act === 'proj-close') { closeProjector(); return true; }
+    if (act === 'proj-prev' || act === 'proj-next') { projMove(act === 'proj-next' ? 1 : -1); return true; }
+    if (act === 'proj-seen') {
+      const P0 = S.admin.proj, did = P0.list[P0.idx];
+      try {
+        const out = await withBusy(t, 'Guardando…', () => api('admin.doubt.update', { id: did, status: 'Vista en taller' }));
+        if (!out.ok) { toast(out.message || 'No se pudo guardar'); return true; }
+        setDoubtLocal(P0.cid, out.doubt); S.admin.cohorts = null;
+        if (P0.idx < P0.list.length - 1) P0.idx++;
+        renderProjector();
+      } catch (err) { if (err.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+      return true;
+    }
+    if (act === 'doubt-status') {
+      const cid = route()[2];
+      adminAction(t, 'admin.doubt.update', { id: id, status: t.getAttribute('data-status') }, (out) => {
+        setDoubtLocal(cid, out.doubt); S.admin.cohorts = null; refreshDoubts(cid); toast('Duda: ' + out.doubt.status.toLowerCase());
+      });
+      return true;
+    }
+    if (act === 'doubt-reply') {
+      const card = t.closest('.wb-adoubt'), slot = card.querySelector('[data-reply-slot]');
+      const x = S.admin.detail[route()[2]].doubts.find((y) => y.id === id);
+      slot.innerHTML = '<form class="wb-form wb-replyform" data-form="doubt-reply" data-id="' + esc(id) + '" novalidate>' +
+        '<label class="wb-field"><span>Respuesta para ' + esc(first(x.name)) + '</span><textarea class="wb-ta wb-ta--sm" name="reply" rows="3" maxlength="3000">' + esc(x.reply || '') + '</textarea></label>' +
+        '<label class="wb-checkline"><input type="checkbox" name="notify" checked><span>Avisarle por correo</span></label>' +
+        '<p class="wb-err" data-err></p><div class="wb-actions"><button class="wb-btn wb-btn--sm" type="submit" data-submit>Guardar respuesta</button>' +
+        '<button class="wb-btn wb-btn--sm wb-btn--ghost" type="button" data-act="cancel-form">Cancelar</button></div></form>';
+      slot.querySelector('textarea').focus();
+      return true;
+    }
+    if (act === 'person-cop-adjust') {
+      const f = findPerson(id), card = t.closest('.wb-person'), slot = card.querySelector('[data-copadj-slot]');
+      const c = f.p.copilot || {}, st = c.state || {};
+      slot.innerHTML = '<form class="wb-form wb-editp" data-form="cop-adjust" data-id="' + esc(id) + '" novalidate><div class="wb-grid2">' +
+        '<label class="wb-field"><span>Disponible hasta <em>(incluye ese día)</em></span><input class="wb-input" name="until" type="date" value="' + esc(c.until || st.until || '') + '"></label>' +
+        '<label class="wb-field"><span>Mensajes en todo el Sprint</span><input class="wb-input" name="limit" type="number" min="0" step="1" value="' + esc(c.limit || '') + '" placeholder="' + esc((S.admin.settings && S.admin.settings.sprintLimit) || 250) + ' (el de siempre)"></label></div>' +
+        '<p class="wb-small wb-small--top">Lleva ' + (c.used || 0) + ' mensajes. Deja la fecha vacía para que se apague solo al día siguiente de la última sesión.</p>' +
+        '<p class="wb-err" data-err></p><div class="wb-actions"><button class="wb-btn wb-btn--sm" type="submit" data-submit>Guardar</button>' +
+        '<button class="wb-btn wb-btn--sm wb-btn--ghost" type="button" data-act="cancel-form">Cancelar</button></div></form>';
+      return true;
+    }
+    return false;
+  }
+
   /* ===================== EVENTOS ===================== */
+  function onKey(e) {
+    if (!root || !root.isConnected) return;
+    if (e.key === 'Escape') { if (S.admin.proj) return closeProjector(); return closeLayer(); }
+    if (S.admin.proj && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); return projMove(e.key === 'ArrowRight' ? 1 : -1); }
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.target.matches('.wb-cop-input, .wb-fc-input')) {
+      e.preventDefault();
+      const f = e.target.form;
+      if (f) f.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  }
+
   function onInput(e) {
     const t = e.target;
+    if (t.matches('.wb-cop-input, .wb-fc-input')) {
+      if (t.matches('.wb-cop-input')) S.cop.draft = t.value;
+      t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 160) + 'px';
+      return;
+    }
     if (t.matches('textarea[data-field], input[data-field]')) {
       if (t.tagName === 'TEXTAREA') autosize(t);
       if (!ADMIN) {
+        const art = t.closest('.wb-section');
+        if (art) art.classList.toggle('has-answer', filled(t.value));
         setAnswer(t.getAttribute('data-field'), t.value);
         const c = view.querySelector('[data-bpcount]');
         if (c) { const b = bpProgress(BPS[Number(c.getAttribute('data-bpcount')) - 1], S.answers); c.textContent = b.n + '/' + b.total; }
@@ -1476,6 +2395,11 @@
       setAnswer(f, on ? '1' : '');
       view.querySelectorAll('[data-act=toggle][data-field="' + f + '"]').forEach((b) => { b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); });
       if (on && /_TERMINADO$/.test(f)) toast('¡Blueprint terminado!');
+      if (/^BP\d_TERMINADO$/.test(f)) {
+        const bp = BPS[Number(f.charAt(2)) - 1];
+        view.querySelectorAll('[data-nudge="' + bp.n + '"]').forEach((x) => x.remove());
+        if (on) view.querySelectorAll('[data-act=toggle][data-field="' + f + '"]').forEach((b) => b.insertAdjacentHTML('afterend', copNudgeHtml(bp)));
+      }
       if (on && f === CONTENT.prep.doneId) toast('¡Listo para el kick-off!');
       const m = f.match(/^RUB(\d)_/);
       if (m) {
@@ -1509,11 +2433,12 @@
       return;
     }
     if (act === 'pdf') return downloadPdf(t, { profile: S.me.profile, cohort: S.me.cohort, answers: S.answers });
-    if (!ADMIN) return;
+    if (!ADMIN) return onParticipantClick(e, t, act);
 
     // ---- Admin ----
+    if (await onAdminExtraClick(e, t, act, id)) return;
     if (act === 'refresh') {
-      S.admin.cohorts = null; S.admin.detail = {}; S.admin.workbooks = {};
+      S.admin.cohorts = null; S.admin.detail = {}; S.admin.workbooks = {}; S.admin.questions = {};
       return renderAdmin();
     }
     if (act === 'new-cohort') { const slot = view.querySelector('[data-newcohort]'); slot.innerHTML = cohortForm(null); slot.querySelector('input').focus(); return; }
@@ -1582,6 +2507,82 @@
     }
   }
 
+  async function onParticipantClick(e, t, act) {
+    if (act === 'cop-open') return openCopilot();
+    if (act === 'cop') { if (copOn()) copFromButton(t); return; }
+    if (act === 'cop-reset') {
+      if (!S.cop.thread || !S.cop.thread.length || S.cop.busy) return;
+      if (!window.confirm('¿Empezar una conversación nueva? La anterior ya no la verás aquí.')) return;
+      try {
+        const out = await api('copilot.reset');
+        if (out.ok) { S.cop.thread = []; S.cop.applied = {}; S.cop.doubtSent = {}; copRefresh(); }
+      } catch (err) { if (err.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+      return;
+    }
+    if (act === 'cop-apply') return applyProposal(Number(t.getAttribute('data-i')), Number(t.getAttribute('data-j')), t.getAttribute('data-mode'));
+    if (act === 'cop-goto') {
+      e.preventDefault();
+      const f = t.getAttribute('data-field');
+      if (sectionById(f)) S.focusSection = f;
+      if (window.innerWidth < 900) closeLayer();
+      return go(t.getAttribute('href').slice(1));
+    }
+    if (act === 'cop-link') { if (window.innerWidth < 900) closeLayer(); return; }
+    if (act === 'cop-doubt') {
+      const i = Number(t.getAttribute('data-i'));
+      const ta = root.querySelector('[data-doubt-text="' + i + '"]');
+      const text = ta ? ta.value.trim() : '';
+      if (!text) return;
+      const prev = (S.cop.thread || []).find((x) => x.i === i - 1 && x.r === 'u');
+      try {
+        const out = await withBusy(t, 'Enviando…', () => api('doubt.create', { text: text, field: prev && prev.f || '' }));
+        if (!out.ok) { toast(out.message || 'No se pudo enviar'); return; }
+        S.doubts = out.doubts;
+        const dm = (S.cop.thread || []).find((x) => x.i === i && x.r === 'a');
+        S.cop.doubtSent[(dm && dm.ts) || i] = 'Enviada. ' + (out.session ? 'La verá ' + S.facilitator + ' en el ' + sessionShort(out.session) + '.' : 'La verá ' + S.facilitator + '.');
+        copRefresh();
+        const home = view.querySelector('[data-doubts-home]'); if (home) home.outerHTML = doubtsHomeHtml();
+      } catch (err) { if (err.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+      return;
+    }
+    if (act === 'nudge-off') { store.set(nudgeKey(t.getAttribute('data-n')), '1'); const n = t.closest('.wb-copnudge'); if (n) n.remove(); return; }
+    if (act === 'doubt-open') {
+      const f = t.getAttribute('data-field') || '';
+      const slot = view.querySelector('[data-doubt-slot="' + f + '"]');
+      if (!slot) return;
+      slot.innerHTML = doubtForm(f);
+      const ta = slot.querySelector('textarea'); if (ta) try { ta.focus({ preventScroll: false }); } catch (err) { }
+      return;
+    }
+    if (act === 'doubt-withdraw') {
+      if (!window.confirm('¿Retirar esta duda?')) return;
+      try {
+        const out = await withBusy(t, 'Un momento…', () => api('doubt.withdraw', { id: t.getAttribute('data-id') }));
+        if (!out.ok) { toast(out.message || 'No se pudo retirar'); return; }
+        S.doubts = out.doubts;
+        const home = view.querySelector('[data-doubts-home]'); if (home) home.outerHTML = doubtsHomeHtml();
+        toast('Duda retirada');
+      } catch (err) { if (err.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+      return;
+    }
+    if (act === 'ics') { const s = (S.me.cohort.sessions || [])[Number(t.getAttribute('data-n')) - 1]; if (s) downloadIcs(s); return; }
+    if (act === 'fu-status') {
+      const f = t.getAttribute('data-field'), v = t.getAttribute('data-value');
+      setAnswer(f, v);
+      t.parentNode.querySelectorAll('[data-act=fu-status]').forEach((b) => { const on = b === t; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
+      return;
+    }
+    if (act === 'fu-send') {
+      const n = t.getAttribute('data-n');
+      if (!filled(S.answers['SEG' + n + '_ESTADO'])) { toast('Elige cómo te fue con tu objetivo'); return; }
+      setAnswer('SEG' + n + '_ENVIADO', mxToday());
+      clearTimeout(S.saveTimer);
+      await withBusy(t, 'Enviando…', saveNow);
+      toast('¡Gracias! Tu check-in llegó al equipo de Agora');
+      return renderFollowup(n);
+    }
+  }
+
   async function withBusy(btn, label, fn) {
     const html = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="wb-spin"></span> ' + esc(label);
     try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = html; }
@@ -1593,6 +2594,22 @@
       if (!out.ok) { toast(out.message || 'No se pudo completar (' + out.error + ')'); return; }
       onOk(out);
     } catch (e) { if (e.code !== 'auth') toast('No pudimos conectar. Intenta de nuevo.'); }
+  }
+
+  async function submitDoubt(form) {
+    const err = form.querySelector('[data-err]'), btn = form.querySelector('[data-submit]');
+    const text = form.elements.text.value.trim(), field = form.getAttribute('data-field') || '';
+    err.textContent = '';
+    if (text.length < 3) { err.textContent = 'Escribe tu duda.'; return; }
+    try {
+      const out = await withBusy(btn, 'Enviando…', () => api('doubt.create', { text: text, field: field }));
+      if (!out.ok) { err.textContent = out.message || 'No se pudo enviar.'; return; }
+      S.doubts = out.doubts;
+      const msg = 'Duda enviada. ' + (out.session ? 'La verá ' + S.facilitator + ' en el ' + sessionShort(out.session) + '.' : 'La verá ' + S.facilitator + '.');
+      const home = view.querySelector('[data-doubts-home]');
+      if (home && !field) { home.outerHTML = doubtsHomeHtml(); toast(msg); return; }
+      form.outerHTML = '<p class="wb-ok wb-doubt-ok">' + ICON.check + esc(msg) + '</p>';
+    } catch (e) { if (e.code !== 'auth') err.textContent = 'No pudimos conectar. Intenta de nuevo.'; }
   }
 
   function parseList(text) {
@@ -1611,6 +2628,9 @@
     e.preventDefault();
     const kind = form.getAttribute('data-form');
     if (kind === 'login') return doLogin(form);
+    if (kind === 'cop') { const v = form.elements.msg.value; return copSend(v, { kind: 'chat' }); }
+    if (kind === 'fc') return fcSubmit(form);
+    if (kind === 'doubt') return submitDoubt(form);
     const err = form.querySelector('[data-err]');
     const btn = form.querySelector('[data-submit]');
     err.textContent = '';
@@ -1646,6 +2666,21 @@
         S.admin.cohorts = null;
         adminCohort(id, true);
       };
+    } else if (kind === 'cop-settings') {
+      const budget = Number(F.budget.value);
+      if (!(budget >= 0)) { err.textContent = 'Escribe un tope válido en dólares.'; return; }
+      action = 'admin.settings.set'; data = { enabled: !!F.enabled.checked, budget: budget };
+      after = (out) => { S.admin.settings = out.settings; S.admin.settingsOpen = false; toast('Ajustes del copiloto guardados'); const el = view.querySelector('.wb-copset'); if (el) el.outerHTML = copSettingsHtml(); };
+    } else if (kind === 'doubt-reply') {
+      const did = form.getAttribute('data-id'), cid = route()[2];
+      const x = S.admin.detail[cid].doubts.find((y) => y.id === did);
+      action = 'admin.doubt.update'; data = { id: did, reply: F.reply.value.trim(), notify: !!F.notify.checked };
+      if (x && x.status === 'Pendiente' && F.reply.value.trim()) data.status = 'Resuelta';
+      after = (out) => { setDoubtLocal(cid, out.doubt); S.admin.cohorts = null; refreshDoubts(cid); toast(out.mailed ? 'Respuesta guardada y enviada por correo' : 'Respuesta guardada'); };
+    } else if (kind === 'cop-adjust') {
+      const pid = form.getAttribute('data-id');
+      action = 'admin.copilot.set'; data = { id: pid, until: F.until.value, limit: Number(F.limit.value) || 0 };
+      after = (out) => { replacePerson(out.participant); toast('Copiloto ajustado'); const card = form.closest('.wb-person'); if (card) card.outerHTML = personCard(out.participant); };
     } else if (kind === 'edit-person') {
       const pid = form.getAttribute('data-id');
       action = 'admin.participant.update'; data = { id: pid, name: F.name.value, email: F.email.value, company: F.company.value };
@@ -1867,8 +2902,8 @@
   }
 
   /* ===================== ESTILOS ===================== */
-  const CSS = "#ag-wb{--ink:#000919;--blue:#1a11f7;--blue-h:#1209c9;--deep:#00086d;--lime:#cbff8b;--lime-soft:#dff9bf;--lime-line:#b8ec7a;--bg:#f3f3f3;--card:#fafafa;--line:#d6d6d6;--muted:#5b5f6a;--faint:#e3e3e6;--red:#c5221f;font-family:\"DM Sans\",system-ui,-apple-system,\"Segoe UI\",sans-serif;color:var(--ink);background:var(--bg);border-radius:24px;padding:28px 20px 40px;max-width:1000px;margin:0 auto;text-align:left;line-height:1.5;font-size:16px;-webkit-font-smoothing:antialiased;position:relative}#ag-wb *,#ag-wb *::before,#ag-wb *::after{box-sizing:border-box}#ag-wb [hidden]{display:none!important}#ag-wb h1,#ag-wb h2,#ag-wb h3,#ag-wb h4,#ag-wb p,#ag-wb ul,#ag-wb figure{margin:0}#ag-wb ul{padding-left:20px}#ag-wb label{margin:0;font-weight:inherit}#ag-wb a{color:var(--blue)}#ag-wb svg{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}#ag-wb button{font-family:inherit;margin:0}#ag-wb code{font:700 15px/1 ui-monospace,\"SFMono-Regular\",Menlo,Consolas,monospace;letter-spacing:.08em}#ag-wb .wb-h1{font:400 40px/1.06 \"DM Serif Display\",Georgia,serif;margin:14px 0 0;color:var(--ink);letter-spacing:0}#ag-wb .wb-h1 span{color:var(--blue)}#ag-wb .wb-h1 .wb-sub{font-size:.6em;color:var(--muted)}#ag-wb .wb-h1--light{color:#fff}#ag-wb .wb-h2{font:400 28px/1.15 \"DM Serif Display\",Georgia,serif;color:var(--ink);margin-top:12px}#ag-wb .wb-h3{font:700 18px/1.3 \"DM Sans\",sans-serif;color:var(--ink)}#ag-wb .wb-lead{font-size:17px;color:var(--muted);margin-top:12px;max-width:40em}#ag-wb .wb-muted{color:var(--muted)}#ag-wb .wb-small{font-size:13px;color:var(--muted);margin-top:14px}#ag-wb .wb-mt{margin-top:12px}#ag-wb .wb-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--lime-soft);font-size:14px}#ag-wb .wb-err{min-height:0;color:var(--red);font-size:14px;font-weight:500}#ag-wb .wb-err:empty{display:none}#ag-wb .wb-ok{color:#1d7a3a;font-weight:700}#ag-wb .wb-bad{color:var(--red);font-weight:700}#ag-wb .wb-label{font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}#ag-wb .wb-label--top{margin-top:0}#ag-wb .wb-kicker{display:block;font:700 11px/1.2 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}#ag-wb .wb-pill{display:inline-block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:8px 13px;border-radius:999px;background:var(--blue);color:#fff}#ag-wb .wb-pill--lime{background:var(--lime);color:var(--ink)}#ag-wb .wb-pill--ink{background:var(--ink);color:var(--lime)}#ag-wb .wb-chip{display:inline-flex;align-items:center;gap:4px;font:700 12px/1 \"DM Sans\",sans-serif;padding:6px 10px;border-radius:999px;background:#e8e7ff;color:var(--blue);white-space:nowrap}#ag-wb .wb-chip svg{width:13px;height:13px;stroke-width:3}#ag-wb .wb-chip--done{background:var(--lime);color:var(--ink)}#ag-wb .wb-chip--muted{background:var(--faint);color:var(--muted)}#ag-wb .wb-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 22px;border:0;border-radius:999px;background:var(--blue);color:#fff;font:700 15px/1.2 \"DM Sans\",sans-serif;cursor:pointer;text-decoration:none;transition:background .15s,opacity .15s;-webkit-appearance:none;appearance:none;text-align:center;white-space:nowrap}#ag-wb .wb-btn:hover{background:var(--blue-h);color:#fff}#ag-wb .wb-btn:disabled{opacity:.6;cursor:progress}#ag-wb .wb-btn--full{display:flex;width:100%;min-height:54px;font-size:16px}#ag-wb .wb-btn--lime{background:var(--lime);color:var(--ink);margin-top:20px}#ag-wb .wb-btn--lime:hover{background:#b9f26d;color:var(--ink)}#ag-wb .wb-btn--ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}#ag-wb .wb-btn--ghost:hover{background:#fff;color:var(--blue);box-shadow:inset 0 0 0 1.5px var(--blue)}#ag-wb .wb-btn--danger{background:#fff;color:var(--red);box-shadow:inset 0 0 0 1.5px #f0c4c3}#ag-wb .wb-btn--danger:hover{background:#fff5f5;color:var(--red)}#ag-wb .wb-btn--sm{min-height:36px;padding:8px 14px;font-size:13px}#ag-wb .wb-btn svg{width:17px;height:17px}#ag-wb .wb-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--ink);cursor:pointer;padding:0}#ag-wb .wb-icon:hover{background:var(--faint)}#ag-wb .wb-btn:focus-visible,#ag-wb .wb-icon:focus-visible,#ag-wb .wb-tool:focus-visible,#ag-wb a:focus-visible,#ag-wb .wb-route:focus-visible,#ag-wb .wb-done:focus-visible,#ag-wb .wb-copy:focus-visible,#ag-wb summary:focus-visible,#ag-wb .wb-tabs button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-form{display:grid;gap:14px}#ag-wb .wb-field{display:grid;gap:7px}#ag-wb .wb-field>span{font:700 14px/1.2 \"DM Sans\",sans-serif;color:var(--ink)}#ag-wb .wb-field em{font-style:normal;font-weight:400;color:var(--muted)}#ag-wb .wb-input{display:block;width:100%;height:50px;padding:0 15px;border:1.5px solid var(--line);border-radius:14px;background:#fff;font:400 16px/1.2 \"DM Sans\",sans-serif;color:var(--ink);margin:0;box-shadow:none;-webkit-appearance:none;appearance:none}#ag-wb .wb-input:focus,#ag-wb .wb-ta:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(26,17,247,.14)}#ag-wb .wb-pin{font:700 22px/1 ui-monospace,\"SFMono-Regular\",Menlo,Consolas,monospace;letter-spacing:.4em}#ag-wb .wb-ta{display:block;width:100%;min-height:84px;padding:13px 15px;border:1.5px solid var(--line);border-radius:14px;background:#fff;font:400 16px/1.55 \"DM Sans\",sans-serif;color:var(--ink);resize:vertical;margin:0;box-shadow:none;overflow:hidden;-webkit-appearance:none;appearance:none}#ag-wb .wb-ta::placeholder,#ag-wb .wb-input::placeholder{color:#9a9ea9}#ag-wb .wb-ta--list{min-height:130px;overflow:auto;font-size:15px}#ag-wb .wb-checkline{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}#ag-wb .wb-checkline input{width:18px;height:18px;margin:0;accent-color:var(--blue)}#ag-wb .wb-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}#ag-wb .wb-grid2,#ag-wb .wb-grid3{display:grid;gap:14px}#ag-wb .wb-screen{animation:agwbIn .25s ease}@keyframes agwbIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}#ag-wb .wb-center{display:grid;justify-items:center;gap:14px;text-align:center;padding:70px 10px;color:var(--muted)}#ag-wb .wb-spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(26,17,247,.2);border-top-color:var(--blue);animation:agwbSpin .8s linear infinite;vertical-align:-3px}#ag-wb .wb-center .wb-spin{width:30px;height:30px;border-width:3px}#ag-wb .wb-spin--light{border-color:rgba(255,255,255,.35);border-top-color:#fff}@keyframes agwbSpin{to{transform:rotate(360deg)}}#ag-wb .wb-sec{margin-top:36px}#ag-wb .wb-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}#ag-wb .wb-row-sm{display:flex;justify-content:space-between;gap:10px;font-size:14px}#ag-wb .wb-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px}#ag-wb .wb-empty{display:grid;gap:4px;padding:26px 20px;border:1.5px dashed var(--line);border-radius:18px;text-align:center;color:var(--muted);margin-top:14px}#ag-wb .wb-empty strong{color:var(--ink)}#ag-wb .wb-login{max-width:440px;margin:24px auto 10px}#ag-wb .wb-login-logo{display:block;height:34px;width:auto;margin-bottom:30px}#ag-wb .wb-login .wb-form{margin-top:24px}#ag-wb .wb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:22px;border-bottom:1px solid var(--line)}#ag-wb .wb-hello strong{display:block;font:400 24px/1.2 \"DM Serif Display\",Georgia,serif;margin-top:4px}#ag-wb .wb-tools{display:flex;gap:8px;flex-wrap:wrap}#ag-wb .wb-tool{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--ink);font:700 14px/1 \"DM Sans\",sans-serif;cursor:pointer}#ag-wb .wb-tool:hover{box-shadow:inset 0 0 0 1.5px var(--blue);color:var(--blue)}#ag-wb .wb-tool:disabled{opacity:.6;cursor:progress}#ag-wb .wb-tool--ghost{background:transparent;box-shadow:none;color:var(--muted)}#ag-wb .wb-hero{border-radius:24px;padding:28px 22px 26px;color:#fff;background:linear-gradient(160deg,var(--deep) 0%,#0000d8 100%);position:relative;overflow:hidden}#ag-wb .wb-hero::after{content:\"\";position:absolute;right:-90px;top:-90px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(203,255,139,.22),transparent 70%);pointer-events:none}#ag-wb .wb-hero .wb-h1{font-size:32px;margin-top:14px;max-width:16em}#ag-wb .wb-hero-stats{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px;margin-top:18px}#ag-wb .wb-big{font:400 64px/1 \"DM Serif Display\",Georgia,serif;color:var(--lime)}#ag-wb .wb-big small{font-size:.5em}#ag-wb .wb-hero-stats p{color:#c9cbf5;font-size:15px;max-width:30em;padding-bottom:8px}#ag-wb .wb-bar{height:8px;border-radius:99px;background:var(--faint);overflow:hidden;margin-top:10px}#ag-wb .wb-bar i{display:block;height:100%;background:var(--blue);border-radius:99px;transition:width .4s ease}#ag-wb .wb-bar--hero{background:rgba(255,255,255,.18);margin-top:16px}#ag-wb .wb-bar--hero i{background:var(--lime)}#ag-wb .wb-steps{display:grid;gap:10px;margin-top:14px}#ag-wb .wb-step{display:grid;grid-template-columns:34px 1fr;gap:2px 12px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:16px}#ag-wb .wb-step b{grid-row:span 2;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--lime);font:700 15px/1 \"DM Sans\",sans-serif}#ag-wb .wb-step span{font-size:14px;color:var(--muted)}#ag-wb .wb-routes{display:grid;gap:10px;margin-top:16px}#ag-wb .wb-route{display:grid;grid-template-columns:1fr 30px;grid-template-areas:\"when check\" \"text check\";gap:6px 14px;align-items:center;width:100%;text-align:left;padding:14px 16px;border-radius:16px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:400 15px/1.45 \"DM Sans\",sans-serif;transition:border-color .15s,background .15s}#ag-wb .wb-route:hover{border-color:var(--blue)}#ag-wb .wb-route-when{grid-area:when;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:700 13px/1.2 \"DM Sans\",sans-serif;color:var(--blue)}#ag-wb .wb-route-when small{font-weight:500;color:var(--muted);font-size:13px}#ag-wb .wb-route-when em{font-style:normal;font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--lime);padding:4px 8px;border-radius:99px}#ag-wb .wb-route-text{grid-area:text}#ag-wb .wb-check{grid-area:check;width:28px;height:28px;border-radius:9px;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;background:#fff;color:transparent;flex:0 0 28px}#ag-wb .wb-check svg{width:16px;height:16px;stroke-width:3}#ag-wb .wb-route.is-on{background:#f6fdee;border-color:var(--lime-line)}#ag-wb .wb-route.is-on .wb-check,#ag-wb .wb-done.is-on .wb-check{background:var(--lime);border-color:var(--lime-line);color:var(--ink)}#ag-wb .wb-route.is-on .wb-route-text{color:var(--muted)}#ag-wb .wb-callout{display:grid;gap:4px;margin-top:14px;padding:16px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line);font-size:14px}#ag-wb .wb-bpgrid{display:grid;gap:12px;margin-top:16px}#ag-wb .wb-bpcard{display:flex;gap:14px;padding:16px;border-radius:18px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}#ag-wb .wb-bpcard:hover{border-color:var(--blue);transform:translateY(-1px);color:var(--ink)}#ag-wb .wb-bpcard.is-done{border-color:var(--lime-line);background:#fbfff6}#ag-wb .wb-bpnum{flex:0 0 40px;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font:400 20px/1 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-bpcard.is-done .wb-bpnum{background:var(--lime);color:var(--ink)}#ag-wb .wb-bpbody{display:block;flex:1;min-width:0}#ag-wb .wb-bpbody strong{display:block;font:700 17px/1.25 \"DM Sans\",sans-serif}#ag-wb .wb-bpbody small{display:block;font-size:13px;color:var(--muted);margin-top:2px}#ag-wb .wb-bpmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:13px}#ag-wb .wb-two{display:grid;gap:12px}#ag-wb .wb-card--link{display:grid;gap:8px;position:relative;text-decoration:none;color:var(--ink);padding-right:50px;transition:border-color .15s}#ag-wb .wb-card--link .wb-pill{justify-self:start}#ag-wb .wb-card--link:hover{border-color:var(--blue);color:var(--ink)}#ag-wb .wb-card--link>svg{position:absolute;right:18px;top:50%;margin-top:-11px;width:22px;height:22px;color:var(--blue)}#ag-wb .wb-crumbs{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;font-size:14px}#ag-wb .wb-crumbs a{display:inline-flex;align-items:center;gap:4px;font-weight:700;text-decoration:none;color:var(--ink)}#ag-wb .wb-crumbs a:hover{color:var(--blue)}#ag-wb .wb-bphead{margin-bottom:22px}#ag-wb .wb-take{padding:16px 18px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line)}#ag-wb .wb-take span{display:block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}#ag-wb .wb-vs{display:grid;gap:10px}#ag-wb .wb-vs>div{padding:16px;border-radius:16px;font-size:15px}#ag-wb .wb-vs b{display:block;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}#ag-wb .wb-vs-bad{background:#fff;border:1.5px solid #f0c4c3}#ag-wb .wb-vs-bad b{color:var(--red)}#ag-wb .wb-vs-good{background:#fff;border:1.5px solid var(--lime-line)}#ag-wb .wb-vs-good b{color:#1d7a3a}#ag-wb .wb-master{margin-top:22px;padding:18px;border-radius:18px;background:var(--ink);color:#e9eaf2}#ag-wb .wb-master p{font-size:14px;line-height:1.6;white-space:pre-line}#ag-wb .wb-prompt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}#ag-wb .wb-prompt-head>span{font:700 11px/1.2 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}#ag-wb .wb-copy{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:0;background:var(--lime);color:var(--ink);font:700 13px/1 \"DM Sans\",sans-serif;cursor:pointer;white-space:nowrap}#ag-wb .wb-copy:hover{background:#b9f26d}#ag-wb .wb-copy svg{width:15px;height:15px}#ag-wb .wb-section{margin-top:18px;padding:20px 18px;border-radius:20px;background:#fff;border:1px solid var(--line);scroll-margin-top:90px}#ag-wb .wb-section-head{display:flex;align-items:flex-start;gap:12px}#ag-wb .wb-num{flex:0 0 30px;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font:700 14px/1 \"DM Sans\",sans-serif;margin-top:-2px}#ag-wb .wb-q{margin-top:10px;font-size:15px;color:var(--muted)}#ag-wb .wb-prompt{margin-top:14px;padding:14px;border-radius:14px;background:var(--bg)}#ag-wb .wb-prompt .wb-prompt-head>span{color:var(--blue)}#ag-wb .wb-prompt p{font-size:14px;line-height:1.55;color:var(--muted)}#ag-wb .wb-answer{padding:13px 15px;border-radius:14px;background:var(--card);border:1px solid var(--line);white-space:pre-wrap;font-size:15px;overflow-wrap:anywhere}#ag-wb .wb-answer.is-empty{color:#9a9ea9;font-style:italic}#ag-wb .wb-faqs{display:grid;gap:8px;margin-top:14px}#ag-wb .wb-faq{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0 16px}#ag-wb .wb-faq summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}#ag-wb .wb-faq summary::-webkit-details-marker{display:none}#ag-wb .wb-faq summary::after{content:\"+\";font:400 22px/1 \"DM Sans\",sans-serif;color:var(--blue)}#ag-wb .wb-faq[open] summary::after{content:\"–\"}#ag-wb .wb-faq p{padding-bottom:14px;color:var(--muted);font-size:15px}#ag-wb .wb-res{display:grid;gap:4px;justify-items:start;margin-top:12px;padding:16px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:14px}#ag-wb .wb-res strong{font-size:16px}#ag-wb .wb-res a{word-break:break-all}#ag-wb .wb-done{display:flex;align-items:center;gap:14px;width:100%;margin-top:32px;padding:18px;border-radius:18px;border:1.5px dashed var(--blue);background:#fff;color:var(--ink);font:700 16px/1.35 \"DM Sans\",sans-serif;text-align:left;cursor:pointer}#ag-wb .wb-done .wb-check{width:32px;height:32px;flex-basis:32px}#ag-wb .wb-done.is-on{border-style:solid;border-color:var(--lime-line);background:var(--lime-soft)}#ag-wb .wb-pager{display:grid;gap:10px;margin-top:28px}#ag-wb .wb-pager a{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);font-weight:700}#ag-wb .wb-pager a:hover{border-color:var(--blue)}#ag-wb .wb-pager a.is-next{justify-content:flex-end;text-align:right;background:var(--blue);border-color:var(--blue);color:#fff}#ag-wb .wb-pager small{display:block;font-weight:500;font-size:12px;opacity:.75}#ag-wb .wb-period{margin-top:18px;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-period-head{display:inline-block;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:9px 14px;border-radius:999px;background:var(--ink);color:var(--lime)}#ag-wb .wb-save{position:fixed;left:16px;bottom:16px;z-index:2147482000;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--ink);color:#fff;font:700 13px/1 \"DM Sans\",sans-serif;box-shadow:0 8px 24px rgba(0,9,25,.2);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s}#ag-wb .wb-save.is-on{opacity:1;transform:none}#ag-wb .wb-save svg{width:15px;height:15px;stroke:var(--lime);stroke-width:3}#ag-wb .wb-dot{width:8px;height:8px;border-radius:50%;background:#ffc94d}#ag-wb .wb-save.is-saving .wb-dot{background:var(--lime);animation:agwbPulse 1s ease infinite}#ag-wb .wb-save.is-offline{background:var(--red)}#ag-wb .wb-save.is-offline .wb-dot{background:#fff}@keyframes agwbPulse{50%{opacity:.3}}#ag-wb .wb-toast{position:fixed;left:50%;bottom:16px;z-index:2147482001;transform:translate(-50%,16px);padding:12px 18px;border-radius:999px;background:var(--lime);color:var(--ink);font:700 14px/1.2 \"DM Sans\",sans-serif;box-shadow:0 8px 24px rgba(0,9,25,.2);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 32px);text-align:center}#ag-wb .wb-toast.is-on{opacity:1;transform:translate(-50%,0)}#ag-wb .wb-layer{display:none}#ag-wb .wb-layer.is-on{display:block}#ag-wb .wb-overlay{position:fixed;inset:0;z-index:2147482500;background:rgba(0,9,25,.45)}#ag-wb .wb-drawer{position:fixed;top:0;right:0;bottom:0;z-index:2147482501;width:min(480px,100vw);background:var(--bg);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,9,25,.25);animation:agwbDrawer .25s ease}@keyframes agwbDrawer{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}#ag-wb .wb-drawer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 20px 12px}#ag-wb .wb-drawer-head .wb-h2{font-size:24px;margin-top:10px}#ag-wb .wb-search{display:flex;align-items:center;gap:8px;margin:0 20px 10px;padding:0 14px;height:46px;border-radius:14px;background:#fff;border:1.5px solid var(--line);color:var(--muted)}#ag-wb .wb-search:focus-within{border-color:var(--blue)}#ag-wb .wb-search input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;font:400 16px/1 \"DM Sans\",sans-serif;color:var(--ink);padding:0;margin:0;box-shadow:none;-webkit-appearance:none;appearance:none}#ag-wb .wb-search--inline{margin:0;flex:1 1 260px;max-width:360px}#ag-wb .wb-gloss{flex:1;overflow-y:auto;padding:4px 20px 30px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}#ag-wb .wb-gloss-group{margin-top:16px}#ag-wb .wb-gloss-group h3{font:700 11px/1.3 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}#ag-wb .wb-gloss-group.is-current h3{color:var(--blue)}#ag-wb .wb-term{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--line);margin-bottom:8px}#ag-wb .wb-gloss-group.is-current .wb-term{border-color:#c9c6ff}#ag-wb .wb-term p{font-size:14px;color:var(--muted);margin-top:3px}#ag-wb .wb-gloss-empty{padding:30px 0;text-align:center;color:var(--muted)}#ag-wb .wb-tip{display:grid;gap:4px;margin-top:18px;padding:14px;border-radius:14px;background:var(--lime-soft);font-size:14px}#ag-wb .wb-cohorts{display:grid;gap:12px}#ag-wb .wb-cohort{display:grid;gap:6px;padding:18px;border-radius:20px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);transition:border-color .15s}#ag-wb .wb-cohort:hover{border-color:var(--blue);color:var(--ink)}#ag-wb .wb-cohort.is-closed{background:var(--card)}#ag-wb .wb-cohort-head{display:flex;justify-content:space-between;align-items:center;gap:10px}#ag-wb .wb-cohort-head strong{font:400 22px/1.2 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-cohort-stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);margin-top:6px}#ag-wb .wb-cohort-stats b{color:var(--ink)}#ag-wb [data-newcohort],#ag-wb [data-editcohort]{margin-bottom:16px}#ag-wb .wb-add{margin-bottom:6px}#ag-wb .wb-add .wb-form{margin-top:16px}#ag-wb .wb-tabs{display:inline-flex;padding:4px;border-radius:999px;background:var(--bg)}#ag-wb .wb-tabs button{border:0;background:transparent;padding:8px 16px;border-radius:999px;font:700 14px/1 \"DM Sans\",sans-serif;color:var(--muted);cursor:pointer}#ag-wb .wb-tabs button[aria-selected=\"true\"]{background:var(--ink);color:#fff}#ag-wb .wb-result{margin-top:16px;padding:16px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line);display:grid;gap:8px;justify-items:start;font-size:14px}#ag-wb .wb-result ul{display:grid;gap:4px}#ag-wb .wb-result code{font-size:14px}#ag-wb .wb-people{display:grid;gap:12px;margin-top:14px}#ag-wb .wb-person{display:grid;gap:14px;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-person.is-inactive{background:var(--card);opacity:.85}#ag-wb .wb-person-main strong{display:block;font-size:17px}#ag-wb .wb-person-main span{font-size:14px;overflow-wrap:anywhere}#ag-wb .wb-person-pin{display:flex;align-items:center;gap:6px}#ag-wb .wb-person-pin .wb-label{margin:0 6px 0 0}#ag-wb .wb-person-pin code{min-width:72px}#ag-wb .wb-bpdots{display:flex;gap:5px;margin-top:10px}#ag-wb .wb-bpdots i{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font:700 11px/1 \"DM Sans\",sans-serif;font-style:normal;background:var(--faint);color:var(--muted)}#ag-wb .wb-bpdots i.on{background:var(--lime);color:var(--ink)}#ag-wb .wb-person-meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted)}#ag-wb .wb-person-actions{display:flex;flex-wrap:wrap;gap:8px}#ag-wb .wb-editp{padding-top:14px;border-top:1px solid var(--line)}#ag-wb [data-edit-slot]:empty{display:none}#ag-wb .wb-inactive{margin-top:22px}#ag-wb .wb-inactive summary{cursor:pointer;font-weight:700;color:var(--muted)}#ag-wb .wb-statrow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}#ag-wb .wb-statrow div{padding:14px;border-radius:16px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-statrow b{display:block;font:400 28px/1.1 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-statrow span{font-size:13px;color:var(--muted)}#ag-wb .wb-ro{margin-top:10px;border-radius:18px;background:#fff;border:1px solid var(--line);padding:0 16px}#ag-wb .wb-ro>summary{display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer;list-style:none}#ag-wb .wb-ro>summary::-webkit-details-marker{display:none}#ag-wb .wb-ro>summary strong{display:block}#ag-wb .wb-ro>summary small{display:block;font-size:13px;color:var(--muted)}#ag-wb .wb-ro .wb-bpnum{flex-basis:36px;width:36px;height:36px;font-size:17px}#ag-wb .wb-ro-item{padding:14px 0;border-top:1px solid var(--faint)}#ag-wb .wb-ro-item h4{font:700 15px/1.3 \"DM Sans\",sans-serif}#ag-wb .wb-ro-item .wb-q{font-size:14px;margin:4px 0 10px}#ag-wb .wb-ro .wb-period{border:0;padding:0 0 16px;margin-top:6px}#ag-wb .wb-sessions{display:grid;gap:12px;margin-top:16px}#ag-wb .wb-session{display:flex;flex-direction:column;gap:6px;padding:18px;border-radius:20px;background:#fff;border:1.5px solid var(--line)}#ag-wb .wb-session.is-next{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,17,247,.08)}#ag-wb .wb-session.is-live,#ag-wb .wb-session.is-soon{border-color:transparent;background:linear-gradient(160deg,var(--deep) 0%,#0000d8 100%);color:#fff}#ag-wb .wb-session.is-live .wb-kicker,#ag-wb .wb-session.is-soon .wb-kicker,#ag-wb .wb-session.is-live .wb-session-when,#ag-wb .wb-session.is-soon .wb-session-when{color:#c9cbf5}#ag-wb .wb-session.is-live .wb-small,#ag-wb .wb-session.is-soon .wb-small{color:#c9cbf5}#ag-wb .wb-session.is-ended{background:var(--card)}#ag-wb .wb-session-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px}#ag-wb .wb-session-title{display:block;font:400 22px/1.2 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-session-when{font-size:15px;color:var(--muted)}#ag-wb .wb-session-when small{font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap}#ag-wb .wb-session-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:10px}#ag-wb .wb-session-actions .wb-small{margin:0}#ag-wb .wb-chip--live{background:#ff3b30;color:#fff}#ag-wb .wb-chip--live i{width:7px;height:7px;border-radius:50%;background:#fff;animation:agwbPulse 1s ease infinite}#ag-wb .wb-h4{font:700 16px/1.3 \"DM Sans\",sans-serif;color:var(--ink)}#ag-wb .wb-h4 .wb-muted{font-weight:400;font-size:14px}#ag-wb .wb-sessnew{display:grid;gap:12px;margin-top:6px}#ag-wb .wb-sessnew .wb-small{margin-top:0}#ag-wb .wb-fieldset{display:grid;gap:12px;margin:0;padding:14px 14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);min-width:0}#ag-wb .wb-fieldset legend{padding:0 6px;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}#ag-wb .wb-grid4{display:grid;grid-template-columns:1fr 1fr;gap:12px}#ag-wb .wb-grid4>label:first-child,#ag-wb .wb-grid4>label:nth-child(2){grid-column:span 2}#ag-wb .wb-warn{display:inline-block;font:700 12px/1.2 \"DM Sans\",sans-serif;color:#8a4b00;background:#fff1d6;border-radius:999px;padding:4px 9px}#ag-wb .wb-cohort-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;color:var(--ink)}#ag-wb .wb-sessadmin{margin-bottom:16px}#ag-wb .wb-sessadmin>.wb-row{align-items:center;margin-bottom:4px}#ag-wb .wb-small0{font-size:13px}#ag-wb .wb-sessrow{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--faint)}#ag-wb .wb-sessadmin>.wb-row+.wb-sessrow{border-top:0}#ag-wb .wb-sessrow-main{display:grid;gap:2px;min-width:0}#ag-wb .wb-sessrow-main strong{font-size:16px}#ag-wb .wb-sessrow-main .wb-muted{font-size:14px}#ag-wb .wb-sessrow>.wb-btn{justify-self:start}#ag-wb .wb-sesslinks{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px}#ag-wb .wb-sesslinks a{display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none}#ag-wb .wb-sesslinks svg{width:16px;height:16px}#ag-wb .wb-sessform{padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}#ag-wb [data-sess-slot]:empty{display:none}#ag-wb .wb-clock{display:grid;gap:18px;margin-bottom:16px;padding:22px;border-radius:24px;background:var(--ink);color:#fff;position:relative;overflow:hidden}#ag-wb .wb-clock::after{content:\"\";position:absolute;left:-60px;bottom:-80px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(26,17,247,.45),transparent 70%);pointer-events:none}#ag-wb .wb-clock>div{position:relative;z-index:1}#ag-wb .wb-clock .wb-kicker{color:#8a90a2}#ag-wb .wb-clock-main{display:grid;gap:8px;align-content:start}#ag-wb .wb-clock-side{display:grid;gap:10px;align-content:start;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}#ag-wb .wb-clock-side .wb-pill{justify-self:start}#ag-wb .wb-clock-side .wb-h3{color:#fff}#ag-wb .wb-clock-side p{font-size:14px;color:#c9cbf5}#ag-wb .wb-clock-side .wb-btn{justify-self:start}#ag-wb .wb-clock-side .wb-bar{margin-top:2px}#ag-wb .wb-clock-meta{font-size:13px;color:#c9cbf5}#ag-wb .wb-clock-title{font:400 26px/1.15 \"DM Serif Display\",Georgia,serif;color:#fff}#ag-wb .wb-clock-sub{font-size:14px;color:#c9cbf5}#ag-wb .wb-clock-main .wb-btn{justify-self:start;margin-top:6px}#ag-wb .wb-count{display:flex;flex-wrap:wrap;gap:8px}#ag-wb .wb-count>span{display:flex;align-items:baseline;gap:3px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.08)}#ag-wb .wb-count b{font:400 42px/1 \"DM Serif Display\",Georgia,serif;color:var(--lime);font-variant-numeric:tabular-nums}#ag-wb .wb-count small{font-size:13px;color:#c9cbf5}#ag-wb .wb-count--inline{display:inline;font-weight:700;color:var(--lime)}#ag-wb .wb-today{list-style:none;padding:0;margin:0;display:grid;gap:8px}#ag-wb .wb-today li{display:flex;gap:9px;font-size:14px;line-height:1.45;color:#e9eaf2}#ag-wb .wb-today li svg{flex:0 0 20px;width:20px;height:20px;padding:3px;border-radius:6px;background:rgba(255,255,255,.12);color:transparent;stroke-width:3;margin-top:1px}#ag-wb .wb-today li.is-on svg{background:var(--lime);color:var(--ink)}#ag-wb .wb-today li.is-on span{color:#8a90a2;text-decoration:line-through}#ag-wb .wb-today b{color:#fff}#ag-wb .wb-clock-contest{display:flex;gap:10px;align-items:flex-start;margin-top:4px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12);font-size:14px;color:#e9eaf2}#ag-wb .wb-clock-contest svg{flex:0 0 22px;width:22px;height:22px;color:var(--lime)}#ag-wb .wb-clock-contest small{display:block;font-size:12px;color:#8a90a2;margin-top:3px}#ag-wb .wb-three{display:grid;gap:12px}#ag-wb .wb-card--guide{border-color:var(--blue)}#ag-wb .wb-tabs2{display:flex;gap:4px;padding:4px;margin:4px 0 8px;border-radius:16px;background:#e6e6ea;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}#ag-wb .wb-tabs2::-webkit-scrollbar{display:none}#ag-wb .wb-tab{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 14px;border-radius:12px;text-decoration:none;color:var(--muted);font:700 14px/1.1 \"DM Sans\",sans-serif;white-space:nowrap}#ag-wb .wb-tab:hover{color:var(--ink)}#ag-wb .wb-tab small{font-size:11px;font-weight:700;padding:3px 7px;border-radius:99px;background:rgba(0,9,25,.08)}#ag-wb .wb-tab.is-on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,9,25,.12)}#ag-wb .wb-tab.is-on small{background:var(--lime)}#ag-wb .wb-sec--first{margin-top:22px}#ag-wb .wb-bpcallout{display:flex;gap:12px;margin:16px 0 4px;padding:16px;border-radius:16px;background:#ecebff;border:1px solid #c9c6ff}#ag-wb .wb-bpcallout svg{flex:0 0 24px;width:24px;height:24px;color:var(--blue);margin-top:1px}#ag-wb .wb-bpcallout strong{display:block;font-size:15px}#ag-wb .wb-bpcallout p{font-size:14px;color:#2b2f3a;margin-top:3px}#ag-wb .wb-kitcta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;padding:18px;border-radius:18px;background:var(--ink);color:#fff;text-decoration:none}#ag-wb .wb-kitcta>span{display:grid;gap:3px}#ag-wb .wb-kitcta .wb-kicker{color:var(--lime)}#ag-wb .wb-kitcta strong{font-size:17px}#ag-wb .wb-kitcta .wb-muted{color:#c9cbf5;font-size:14px}#ag-wb .wb-kitcta>svg{width:26px;height:26px;color:var(--lime);flex:0 0 26px}#ag-wb .wb-kitcta:hover{color:#fff;background:#0b1430}#ag-wb .wb-kitcta+.wb-done{margin-top:12px}#ag-wb .wb-prepref{margin-top:12px;padding:12px 14px;border-radius:14px;background:#f6fdee;border:1px dashed var(--lime-line);font-size:14px}#ag-wb .wb-prepref-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}#ag-wb .wb-prepref-head span{font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#1d7a3a}#ag-wb .wb-prepref-head a{font-size:13px;font-weight:700}#ag-wb .wb-prepref p{white-space:pre-line;margin-top:3px}#ag-wb .wb-section.is-flash{animation:agwbFlash 1.8s ease}@keyframes agwbFlash{0%,40%{box-shadow:0 0 0 4px var(--lime)}100%{box-shadow:0 0 0 0 transparent}}#ag-wb .wb-kit{margin-top:22px}#ag-wb .wb-kit-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}#ag-wb .wb-kit .wb-lead{font-size:16px}#ag-wb .wb-case{margin-top:14px;padding:16px;border-radius:16px;background:#fff;border-left:4px solid var(--blue)}#ag-wb .wb-case span{display:block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px}#ag-wb .wb-kit-howto{display:grid;gap:8px;margin-top:14px}#ag-wb .wb-kit-howto>div{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:14px}#ag-wb .wb-kit-howto b{flex:0 0 26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--lime);font-size:13px}#ag-wb .wb-kit-sec{margin-top:26px}#ag-wb .wb-kit-sec>.wb-h3{display:flex;align-items:center;gap:10px;margin-bottom:12px}#ag-wb .wb-kit-sec>.wb-h3 .wb-num{margin:0}#ag-wb .wb-compare{display:grid;gap:10px}#ag-wb .wb-compare>div{padding:14px 16px;border-radius:14px;font-size:15px}#ag-wb .wb-compare span{display:block;font:700 11px/1.2 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}#ag-wb .wb-compare-l{background:#fff;border:1.5px dashed var(--line);color:var(--muted)}#ag-wb .wb-compare-r{background:#fff;border:1.5px solid var(--lime-line)}#ag-wb .wb-compare-r span{color:#1d7a3a}#ag-wb .wb-changes{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-top:10px;font-size:14px}#ag-wb .wb-changes b{font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}#ag-wb .wb-changes ol{display:contents;counter-reset:ch}#ag-wb .wb-changes li{list-style:none;counter-increment:ch}#ag-wb .wb-changes li::before{content:counter(ch);display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:5px;border-radius:50%;background:var(--blue);color:#fff;font:700 11px/1 \"DM Sans\",sans-serif}#ag-wb .wb-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line);background:#fff}#ag-wb .wb-table{width:100%;border-collapse:collapse;font-size:14px}#ag-wb .wb-table.is-wide{min-width:540px}#ag-wb .wb-table th,#ag-wb .wb-table td{padding:10px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--faint)}#ag-wb .wb-table thead th{border-top:0;background:var(--bg);font:700 12px/1.3 \"DM Sans\",sans-serif;color:var(--muted)}#ag-wb .wb-table tbody th{font-weight:700}#ag-wb .wb-table.has-total tbody tr:last-child{background:#f6fdee;font-weight:700}#ag-wb .wb-note2{margin-top:8px;font-size:13px;color:var(--muted)}#ag-wb .wb-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}#ag-wb .wb-flow-step{padding:9px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:700}#ag-wb .wb-flow-step:first-child{background:var(--ink);border-color:var(--ink);color:#fff}#ag-wb .wb-flow i{font-style:normal;color:var(--blue);font-weight:700}#ag-wb .wb-template ul{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px}#ag-wb .wb-template li{padding:10px 12px;border-radius:12px;background:#fff;border:1px dashed var(--line);font-size:14px}#ag-wb .wb-template li::after{content:\" ______\";color:#b4b8c2}#ag-wb .wb-rubric>.wb-row{align-items:center}#ag-wb .wb-rubcount{font:400 26px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-checkrow{display:flex;align-items:flex-start;gap:12px;width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font:500 15px/1.45 \"DM Sans\",sans-serif;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}#ag-wb .wb-checkrow:hover{border-color:var(--blue)}#ag-wb .wb-checkrow .wb-check{flex:0 0 26px;width:26px;height:26px}#ag-wb .wb-checkrow.is-on{background:#f6fdee;border-color:var(--lime-line)}#ag-wb .wb-checkrow.is-on .wb-check{background:var(--lime);border-color:var(--lime-line);color:var(--ink)}#ag-wb .wb-checkrow.wb-done{margin-top:16px;font-weight:700;border-style:dashed;border-color:var(--blue)}#ag-wb .wb-checkrow.wb-done.is-on{border-style:solid;border-color:var(--lime-line);background:var(--lime-soft)}#ag-wb .wb-checkrow:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-errors{display:grid;gap:8px}#ag-wb .wb-error{display:flex;gap:10px;padding:13px 14px;border-radius:14px;background:#fff;border:1px solid #f0c4c3;font-size:14px}#ag-wb .wb-error svg{flex:0 0 20px;width:20px;height:20px;color:var(--red);margin-top:1px}#ag-wb .wb-kprompt{display:grid;gap:10px;justify-items:start;padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}#ag-wb .wb-kprompt:first-of-type{border-top:0;padding-top:0}#ag-wb .wb-kprompt p{font-size:14px;line-height:1.55}#ag-wb .wb-variant{padding:16px;border-radius:16px;background:#ecebff}#ag-wb .wb-variant span{display:block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px}#ag-wb .wb-variant p{font-size:14px}#ag-wb .wb-tool-card{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:14px;padding:18px;border-radius:18px;background:#fff;border:2px solid var(--blue);box-shadow:0 6px 18px rgba(26,17,247,.08)}#ag-wb .wb-tool-head{display:flex;gap:12px;align-items:flex-start}#ag-wb .wb-tool-head svg{flex:0 0 36px;width:36px;height:36px;padding:7px;border-radius:10px;background:var(--blue);color:#fff}#ag-wb .wb-tool-head strong{display:block;font-size:16px}#ag-wb .wb-tool-head span{display:block;font-size:13px;color:var(--muted)}#ag-wb .wb-calc-inputs{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}#ag-wb .wb-input{min-width:0}#ag-wb .wb-tool-card .wb-btn,#ag-wb .wb-template .wb-btn{white-space:normal;text-align:left;line-height:1.3}#ag-wb .wb-field .wb-hint{color:var(--muted);font-weight:400}#ag-wb .wb-input--sm{height:44px;font-size:15px;padding:0 12px;border-radius:12px}#ag-wb select.wb-input--sm{padding-right:8px;background:#fff;-webkit-appearance:menulist;appearance:menulist}#ag-wb .wb-field em{font-style:normal;font-weight:500;color:#1d7a3a}#ag-wb .wb-tool-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}#ag-wb .wb-tool-rows>div{padding:10px 12px;border-radius:12px;background:var(--bg)}#ag-wb .wb-tool-rows span{display:block;font-size:12px;color:var(--muted)}#ag-wb .wb-tool-rows b{font:400 22px/1.2 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-tool-card>.wb-btn{justify-self:start}#ag-wb .wb-score{display:grid;gap:8px}#ag-wb .wb-score-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;font-size:14px}#ag-wb .wb-score-total{font-weight:700}#ag-wb .wb-score-total b{font:400 24px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue);text-align:center}#ag-wb .wb-sliders{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}#ag-wb .wb-slider{display:grid;grid-template-columns:minmax(0,1fr) 34px;min-width:0;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px}#ag-wb .wb-slider span{grid-column:1 / -1;font-weight:700}#ag-wb .wb-slider input{width:100%;accent-color:var(--blue);margin:0}#ag-wb .wb-slider b{font:400 22px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue);text-align:right}#ag-wb .wb-slider.is-low{background:#fff1d6;outline:2px solid #f5c26b}#ag-wb .wb-slider.is-low input{accent-color:#c77700}#ag-wb .wb-slider.is-low b{color:#8a4b00}#ag-wb .wb-mats{display:grid;gap:10px;margin-top:14px}#ag-wb .wb-mat{display:grid;grid-template-columns:42px 1fr;gap:6px 12px;padding:14px;border-radius:16px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-mat-icon svg{width:42px;height:42px;padding:9px;border-radius:12px;background:#ecebff;color:var(--blue)}#ag-wb .wb-mat-body strong{display:block;font-size:15px}#ag-wb .wb-mat-body p{font-size:13px;color:var(--muted);margin-top:2px}#ag-wb .wb-mat-type{display:inline-block;margin-top:6px;font:700 10px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}#ag-wb .wb-mat-actions{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}#ag-wb .wb-stack-list{display:grid;gap:6px;padding-bottom:14px}#ag-wb .wb-stack-tool{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border-radius:12px;background:var(--bg);text-decoration:none;color:var(--ink)}#ag-wb .wb-stack-tool:hover{background:#ecebff;color:var(--ink)}#ag-wb .wb-stack-tool span{grid-column:1;font-size:13px;color:var(--muted)}#ag-wb .wb-stack-tool em{grid-row:1 / span 2;grid-column:2;align-self:center;font:700 11px/1 \"DM Sans\",sans-serif;font-style:normal;padding:5px 9px;border-radius:99px;background:var(--ink);color:#fff}#ag-wb .wb-stack-tool em.is-min{background:var(--lime);color:var(--ink)}#ag-wb .wb-gchoice{margin-bottom:18px}#ag-wb .wb-gopts{display:grid;gap:10px;margin-top:10px}#ag-wb .wb-gopt{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border-radius:18px;border:1.5px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;text-align:left;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s}#ag-wb .wb-gopt:hover{border-color:var(--blue);color:var(--ink);box-shadow:0 6px 18px rgba(26,17,247,.1)}#ag-wb .wb-gopt svg{flex:0 0 44px;width:44px;height:44px;padding:10px;border-radius:12px;background:var(--blue);color:#fff}#ag-wb .wb-gopt:nth-child(2) svg{background:var(--ink);color:var(--lime)}#ag-wb .wb-gopt:nth-child(3) svg{background:var(--lime);color:var(--ink)}#ag-wb .wb-gopt span{display:grid;gap:2px}#ag-wb .wb-gopt strong{font-size:16px}#ag-wb .wb-gopt small{font-size:13px;color:var(--muted)}#ag-wb .wb-gopt:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-video{display:grid;gap:12px;margin-bottom:18px}#ag-wb .wb-video-frame{position:relative;padding-top:56.25%;border-radius:18px;overflow:hidden;background:var(--ink)}#ag-wb .wb-video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}#ag-wb .wb-chapters{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#ag-wb .wb-chapter{display:inline-flex;gap:6px;align-items:center;padding:7px 11px;border-radius:99px;border:1px solid var(--line);background:#fff;font:500 13px/1.2 \"DM Sans\",sans-serif;color:var(--ink);cursor:pointer}#ag-wb .wb-chapter b{color:var(--blue);font-variant-numeric:tabular-nums}#ag-wb .wb-chapter:hover{border-color:var(--blue)}#ag-wb .wb-prepcta{display:flex;align-items:center;gap:16px;padding:18px;border-radius:20px;background:#fff;border:2px solid var(--blue);text-decoration:none;color:var(--ink)}#ag-wb .wb-prepcta>span{flex:1;display:grid;gap:4px}#ag-wb .wb-prepcta .wb-kicker{color:var(--blue)}#ag-wb .wb-prepcta .wb-muted{font-size:14px}#ag-wb .wb-prepcta-n{font:400 40px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-prepcta-n small{font-size:.45em;color:var(--muted)}#ag-wb .wb-prepcta:hover{color:var(--ink);box-shadow:0 6px 18px rgba(26,17,247,.12)}#ag-wb .wb-gchs{display:grid;gap:8px;margin-top:14px}#ag-wb .wb-gch{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink)}#ag-wb .wb-gch:hover{border-color:var(--blue);color:var(--ink)}#ag-wb .wb-gch.is-read{background:var(--card)}#ag-wb .wb-gch.is-prep{border-color:var(--blue)}#ag-wb .wb-gch-n{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--lime);font:400 18px/1 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-gch.is-read .wb-gch-n{background:var(--lime);color:var(--ink)}#ag-wb .wb-gch-body{flex:1;display:grid;gap:3px;justify-items:start}#ag-wb .wb-gch-body small{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}#ag-wb .wb-gch-body strong{font-size:16px;line-height:1.3}#ag-wb .wb-gch>svg{color:var(--blue)}#ag-wb .wb-gchapter{max-width:720px}#ag-wb .wb-gp{font-size:17px;line-height:1.65;margin-top:16px;color:#1d2130}#ag-wb .wb-gh3{margin-top:28px}#ag-wb .wb-gcallout{margin-top:18px;padding:16px 18px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line);font:400 20px/1.35 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-quote{margin:22px 0 0;padding:22px;border-radius:18px;background:var(--ink);color:#fff}#ag-wb .wb-quote p{font:400 24px/1.3 \"DM Serif Display\",Georgia,serif;color:var(--lime)}#ag-wb .wb-quote cite{display:block;margin-top:10px;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;color:#8a90a2}#ag-wb .wb-gchecks{margin-top:20px;padding:18px;border-radius:18px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-gchecks ul,#ag-wb .wb-symptoms{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}#ag-wb .wb-gchecks li,#ag-wb .wb-symptoms li{display:flex;gap:10px;font-size:15px}#ag-wb .wb-gchecks li svg{flex:0 0 22px;width:22px;height:22px;padding:4px;border-radius:7px;background:var(--lime);stroke-width:3}#ag-wb .wb-symptoms{margin-top:14px}#ag-wb .wb-symptoms li{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #f0c4c3}#ag-wb .wb-symptoms li svg{flex:0 0 20px;width:20px;height:20px;color:var(--red)}#ag-wb .wb-glist{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}#ag-wb .wb-glist li{display:grid;gap:6px;justify-items:start;padding:14px 16px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:15px}#ag-wb .wb-gnum{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}#ag-wb .wb-gnum li{display:flex;gap:12px;padding:14px 16px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:15px}#ag-wb .wb-gnum b{flex:0 0 28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:14px}#ag-wb .wb-chain,#ag-wb .wb-concepts{display:grid;gap:8px;margin-top:16px}#ag-wb .wb-chain-item,#ag-wb .wb-concept{border-radius:16px;background:#fff;border:1px solid var(--line);padding:0 16px}#ag-wb .wb-chain-item>summary,#ag-wb .wb-concept>summary{display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer;list-style:none}#ag-wb .wb-chain-item>summary::-webkit-details-marker,#ag-wb .wb-concept>summary::-webkit-details-marker{display:none}#ag-wb .wb-chain-item>summary::after,#ag-wb .wb-concept>summary::after{content:\"+\";margin-left:auto;font:400 22px/1 \"DM Sans\",sans-serif;color:var(--blue)}#ag-wb .wb-chain-item[open]>summary::after,#ag-wb .wb-concept[open]>summary::after{content:\"–\"}#ag-wb .wb-chain-item summary strong{display:block}#ag-wb .wb-chain-item summary small{display:block;font-size:14px;color:var(--muted)}#ag-wb .wb-chain-item .wb-bpnum,#ag-wb .wb-concept .wb-bpnum{flex:0 0 36px;width:36px;height:36px;font-size:18px}#ag-wb .wb-chain-body{display:grid;gap:8px;padding:0 0 16px 48px;font-size:14px}#ag-wb .wb-chain-skip{color:#8a2420}#ag-wb .wb-chain-body a{display:inline-flex;align-items:center;gap:4px;font-weight:700;text-decoration:none}#ag-wb .wb-chain-body a svg{width:16px;height:16px}#ag-wb .wb-concept summary small{font-size:13px;color:var(--muted)}#ag-wb .wb-cterm{padding:12px 0;border-top:1px solid var(--faint);font-size:14px}#ag-wb .wb-cterm strong{font-size:15px}#ag-wb .wb-why{margin-top:4px;color:#1d7a3a}#ag-wb .wb-week{display:grid;gap:8px;margin-top:16px}#ag-wb .wb-day{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:13px}#ag-wb .wb-day.is-live{border-color:var(--blue)}#ag-wb .wb-day-name{display:block;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}#ag-wb .wb-day p{margin-top:6px}#ag-wb .wb-day p b{display:block;font-size:12px;color:var(--muted)}#ag-wb .wb-day p.is-live{padding:8px 10px;border-radius:10px;background:var(--ink);color:#fff}#ag-wb .wb-day p.is-live b{color:var(--lime)}#ag-wb .wb-prepbar{display:flex;align-items:center;gap:12px;margin-top:20px;padding:14px 16px;border-radius:16px;background:var(--ink);color:#fff;font-weight:700}#ag-wb .wb-prepbar .wb-bar{flex:1;margin:0;background:rgba(255,255,255,.18)}#ag-wb .wb-prepbar .wb-bar i{background:var(--lime)}#ag-wb .wb-prepbar b{color:var(--lime)}#ag-wb .wb-prepgroup{display:grid;gap:12px;margin-top:22px;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-prepgroup .wb-checkrow{margin-top:0}#ag-wb .wb-prepfield>span{font-size:15px}#ag-wb .wb-hint{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:-3px}#ag-wb .wb-ta--sm{min-height:60px;font-size:15px}#ag-wb .wb-attitude{display:flex;gap:12px;font-size:15px}#ag-wb .wb-attitude b{flex:0 0 28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--lime)}#ag-wb .wb-small--top{margin-top:0}#ag-wb .wb-ro-check{font-size:14px;padding:4px 0}#ag-wb .wb-ro-prep .wb-prepgroup{margin:0 0 12px;padding:0;border:0}#ag-wb .wb-prepline{margin-top:6px}@media (min-width:640px){#ag-wb{padding:36px 36px 48px}#ag-wb .wb-h1{font-size:48px}#ag-wb .wb-hero{padding:36px 34px 32px}#ag-wb .wb-hero .wb-h1{font-size:40px}#ag-wb .wb-steps{grid-template-columns:repeat(2,1fr)}#ag-wb .wb-bpgrid,#ag-wb .wb-two,#ag-wb .wb-vs,#ag-wb .wb-grid2,#ag-wb .wb-pager{grid-template-columns:repeat(2,1fr)}#ag-wb .wb-pager a.is-next{grid-column:2}#ag-wb .wb-section{padding:24px}#ag-wb .wb-statrow{grid-template-columns:repeat(3,1fr)}#ag-wb .wb-clock{grid-template-columns:1.05fr 1fr;padding:28px;gap:22px}#ag-wb .wb-three{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}#ag-wb .wb-kit-howto{grid-template-columns:repeat(3,1fr)}#ag-wb .wb-compare{grid-template-columns:1fr 1fr}#ag-wb .wb-calc-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}#ag-wb .wb-sliders{grid-template-columns:repeat(2,minmax(0,1fr))}#ag-wb .wb-mat{grid-template-columns:42px 1fr auto;align-items:center}#ag-wb .wb-mat-actions{grid-column:3}#ag-wb .wb-week{grid-template-columns:repeat(5,1fr)}#ag-wb .wb-gopts{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#ag-wb .wb-gopt{flex-direction:column;align-items:flex-start}#ag-wb .wb-count b{font-size:52px}#ag-wb .wb-cohorts{grid-template-columns:repeat(2,1fr)}#ag-wb .wb-sessions{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#ag-wb .wb-grid4{grid-template-columns:2fr 1.3fr 1fr 1fr}#ag-wb .wb-grid4>label:first-child,#ag-wb .wb-grid4>label:nth-child(2){grid-column:auto}}@media (min-width:900px){#ag-wb .wb-grid3{grid-template-columns:1.1fr 1.3fr 1fr}#ag-wb .wb-person{grid-template-columns:1.3fr auto 1.2fr;grid-template-areas:\"main pin prog\" \"meta meta meta\" \"act act act\" \"edit edit edit\";align-items:center;column-gap:22px}#ag-wb .wb-person-main{grid-area:main;min-width:0}#ag-wb .wb-person-pin{grid-area:pin}#ag-wb .wb-person-prog{grid-area:prog}#ag-wb .wb-person-meta{grid-area:meta}#ag-wb .wb-person-actions{grid-area:act}#ag-wb [data-edit-slot]{grid-area:edit}#ag-wb .wb-sessrow{grid-template-columns:1.3fr 1.2fr auto;align-items:center;column-gap:20px}#ag-wb .wb-sessrow>.wb-btn{justify-self:end}#ag-wb .wb-sessform-slot{grid-column:1 / -1}}@media (max-width:639px){#ag-wb .wb-toast{bottom:68px}}@media (max-width:480px){#ag-wb .wb-tab-long{display:none}#ag-wb .wb-tab{padding:10px 8px;gap:5px;font-size:13px}}@media (max-width:420px){#ag-wb{border-radius:18px;padding:22px 16px 32px}#ag-wb .wb-h1{font-size:34px}#ag-wb .wb-tool{padding:0 12px;font-size:13px}}@media print{#ag-wb .wb-save,#ag-wb .wb-toast,#ag-wb .wb-layer{display:none}}@media (prefers-reduced-motion:reduce){#ag-wb *,#ag-wb *::before,#ag-wb *::after{animation:none!important;transition:none!important}}";
+  const CSS = "#ag-wb{--ink:#000919;--blue:#1a11f7;--blue-h:#1209c9;--deep:#00086d;--lime:#cbff8b;--lime-soft:#dff9bf;--lime-line:#b8ec7a;--bg:#f3f3f3;--card:#fafafa;--line:#d6d6d6;--muted:#5b5f6a;--faint:#e3e3e6;--red:#c5221f;font-family:\"DM Sans\",system-ui,-apple-system,\"Segoe UI\",sans-serif;color:var(--ink);background:var(--bg);border-radius:24px;padding:28px 20px 40px;max-width:1000px;margin:0 auto;text-align:left;line-height:1.5;font-size:16px;-webkit-font-smoothing:antialiased;position:relative}#ag-wb *,#ag-wb *::before,#ag-wb *::after{box-sizing:border-box}#ag-wb [hidden]{display:none!important}#ag-wb h1,#ag-wb h2,#ag-wb h3,#ag-wb h4,#ag-wb p,#ag-wb ul,#ag-wb figure{margin:0}#ag-wb ul{padding-left:20px}#ag-wb label{margin:0;font-weight:inherit}#ag-wb a{color:var(--blue)}#ag-wb svg{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}#ag-wb button{font-family:inherit;margin:0}#ag-wb code{font:700 15px/1 ui-monospace,\"SFMono-Regular\",Menlo,Consolas,monospace;letter-spacing:.08em}#ag-wb .wb-h1{font:400 40px/1.06 \"DM Serif Display\",Georgia,serif;margin:14px 0 0;color:var(--ink);letter-spacing:0}#ag-wb .wb-h1 span{color:var(--blue)}#ag-wb .wb-h1 .wb-sub{font-size:.6em;color:var(--muted)}#ag-wb .wb-h1--light{color:#fff}#ag-wb .wb-h2{font:400 28px/1.15 \"DM Serif Display\",Georgia,serif;color:var(--ink);margin-top:12px}#ag-wb .wb-h3{font:700 18px/1.3 \"DM Sans\",sans-serif;color:var(--ink)}#ag-wb .wb-lead{font-size:17px;color:var(--muted);margin-top:12px;max-width:40em}#ag-wb .wb-muted{color:var(--muted)}#ag-wb .wb-small{font-size:13px;color:var(--muted);margin-top:14px}#ag-wb .wb-mt{margin-top:12px}#ag-wb .wb-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--lime-soft);font-size:14px}#ag-wb .wb-err{min-height:0;color:var(--red);font-size:14px;font-weight:500}#ag-wb .wb-err:empty{display:none}#ag-wb .wb-ok{color:#1d7a3a;font-weight:700}#ag-wb .wb-bad{color:var(--red);font-weight:700}#ag-wb .wb-label{font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}#ag-wb .wb-label--top{margin-top:0}#ag-wb .wb-kicker{display:block;font:700 11px/1.2 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}#ag-wb .wb-pill{display:inline-block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:8px 13px;border-radius:999px;background:var(--blue);color:#fff}#ag-wb .wb-pill--lime{background:var(--lime);color:var(--ink)}#ag-wb .wb-pill--ink{background:var(--ink);color:var(--lime)}#ag-wb .wb-chip{display:inline-flex;align-items:center;gap:4px;font:700 12px/1 \"DM Sans\",sans-serif;padding:6px 10px;border-radius:999px;background:#e8e7ff;color:var(--blue);white-space:nowrap}#ag-wb .wb-chip svg{width:13px;height:13px;stroke-width:3}#ag-wb .wb-chip--done{background:var(--lime);color:var(--ink)}#ag-wb .wb-chip--muted{background:var(--faint);color:var(--muted)}#ag-wb .wb-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 22px;border:0;border-radius:999px;background:var(--blue);color:#fff;font:700 15px/1.2 \"DM Sans\",sans-serif;cursor:pointer;text-decoration:none;transition:background .15s,opacity .15s;-webkit-appearance:none;appearance:none;text-align:center;white-space:nowrap}#ag-wb .wb-btn:hover{background:var(--blue-h);color:#fff}#ag-wb .wb-btn:disabled{opacity:.6;cursor:progress}#ag-wb .wb-btn--full{display:flex;width:100%;min-height:54px;font-size:16px}#ag-wb .wb-btn--lime{background:var(--lime);color:var(--ink);margin-top:20px}#ag-wb .wb-btn--lime:hover{background:#b9f26d;color:var(--ink)}#ag-wb .wb-btn--ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}#ag-wb .wb-btn--ghost:hover{background:#fff;color:var(--blue);box-shadow:inset 0 0 0 1.5px var(--blue)}#ag-wb .wb-btn--danger{background:#fff;color:var(--red);box-shadow:inset 0 0 0 1.5px #f0c4c3}#ag-wb .wb-btn--danger:hover{background:#fff5f5;color:var(--red)}#ag-wb .wb-btn--sm{min-height:36px;padding:8px 14px;font-size:13px}#ag-wb .wb-btn svg{width:17px;height:17px}#ag-wb .wb-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--ink);cursor:pointer;padding:0}#ag-wb .wb-icon:hover{background:var(--faint)}#ag-wb .wb-btn:focus-visible,#ag-wb .wb-icon:focus-visible,#ag-wb .wb-tool:focus-visible,#ag-wb a:focus-visible,#ag-wb .wb-route:focus-visible,#ag-wb .wb-done:focus-visible,#ag-wb .wb-copy:focus-visible,#ag-wb summary:focus-visible,#ag-wb .wb-tabs button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-form{display:grid;gap:14px}#ag-wb .wb-field{display:grid;gap:7px}#ag-wb .wb-field>span{font:700 14px/1.2 \"DM Sans\",sans-serif;color:var(--ink)}#ag-wb .wb-field em{font-style:normal;font-weight:400;color:var(--muted)}#ag-wb .wb-input{display:block;width:100%;height:50px;padding:0 15px;border:1.5px solid var(--line);border-radius:14px;background:#fff;font:400 16px/1.2 \"DM Sans\",sans-serif;color:var(--ink);margin:0;box-shadow:none;-webkit-appearance:none;appearance:none}#ag-wb .wb-input:focus,#ag-wb .wb-ta:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(26,17,247,.14)}#ag-wb .wb-pin{font:700 22px/1 ui-monospace,\"SFMono-Regular\",Menlo,Consolas,monospace;letter-spacing:.4em}#ag-wb .wb-ta{display:block;width:100%;min-height:84px;padding:13px 15px;border:1.5px solid var(--line);border-radius:14px;background:#fff;font:400 16px/1.55 \"DM Sans\",sans-serif;color:var(--ink);resize:vertical;margin:0;box-shadow:none;overflow:hidden;-webkit-appearance:none;appearance:none}#ag-wb .wb-ta::placeholder,#ag-wb .wb-input::placeholder{color:#9a9ea9}#ag-wb .wb-ta--list{min-height:130px;overflow:auto;font-size:15px}#ag-wb .wb-checkline{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}#ag-wb .wb-checkline input{width:18px;height:18px;margin:0;accent-color:var(--blue)}#ag-wb .wb-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}#ag-wb .wb-grid2,#ag-wb .wb-grid3{display:grid;gap:14px}#ag-wb .wb-screen{animation:agwbIn .25s ease}@keyframes agwbIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}#ag-wb .wb-center{display:grid;justify-items:center;gap:14px;text-align:center;padding:70px 10px;color:var(--muted)}#ag-wb .wb-spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(26,17,247,.2);border-top-color:var(--blue);animation:agwbSpin .8s linear infinite;vertical-align:-3px}#ag-wb .wb-center .wb-spin{width:30px;height:30px;border-width:3px}#ag-wb .wb-spin--light{border-color:rgba(255,255,255,.35);border-top-color:#fff}@keyframes agwbSpin{to{transform:rotate(360deg)}}#ag-wb .wb-sec{margin-top:36px}#ag-wb .wb-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}#ag-wb .wb-row-sm{display:flex;justify-content:space-between;gap:10px;font-size:14px}#ag-wb .wb-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px}#ag-wb .wb-empty{display:grid;gap:4px;padding:26px 20px;border:1.5px dashed var(--line);border-radius:18px;text-align:center;color:var(--muted);margin-top:14px}#ag-wb .wb-empty strong{color:var(--ink)}#ag-wb .wb-login{max-width:440px;margin:24px auto 10px}#ag-wb .wb-login-logo{display:block;height:34px;width:auto;margin-bottom:30px}#ag-wb .wb-login .wb-form{margin-top:24px}#ag-wb .wb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:22px;border-bottom:1px solid var(--line)}#ag-wb .wb-hello strong{display:block;font:400 24px/1.2 \"DM Serif Display\",Georgia,serif;margin-top:4px}#ag-wb .wb-tools{display:flex;gap:8px;flex-wrap:wrap}#ag-wb .wb-tool{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--ink);font:700 14px/1 \"DM Sans\",sans-serif;cursor:pointer}#ag-wb .wb-tool:hover{box-shadow:inset 0 0 0 1.5px var(--blue);color:var(--blue)}#ag-wb .wb-tool:disabled{opacity:.6;cursor:progress}#ag-wb .wb-tool--ghost{background:transparent;box-shadow:none;color:var(--muted)}#ag-wb .wb-hero{border-radius:24px;padding:28px 22px 26px;color:#fff;background:linear-gradient(160deg,var(--deep) 0%,#0000d8 100%);position:relative;overflow:hidden}#ag-wb .wb-hero::after{content:\"\";position:absolute;right:-90px;top:-90px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(203,255,139,.22),transparent 70%);pointer-events:none}#ag-wb .wb-hero .wb-h1{font-size:32px;margin-top:14px;max-width:16em}#ag-wb .wb-hero-stats{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px;margin-top:18px}#ag-wb .wb-big{font:400 64px/1 \"DM Serif Display\",Georgia,serif;color:var(--lime)}#ag-wb .wb-big small{font-size:.5em}#ag-wb .wb-hero-stats p{color:#c9cbf5;font-size:15px;max-width:30em;padding-bottom:8px}#ag-wb .wb-bar{height:8px;border-radius:99px;background:var(--faint);overflow:hidden;margin-top:10px}#ag-wb .wb-bar i{display:block;height:100%;background:var(--blue);border-radius:99px;transition:width .4s ease}#ag-wb .wb-bar--hero{background:rgba(255,255,255,.18);margin-top:16px}#ag-wb .wb-bar--hero i{background:var(--lime)}#ag-wb .wb-steps{display:grid;gap:10px;margin-top:14px}#ag-wb .wb-step{display:grid;grid-template-columns:34px 1fr;gap:2px 12px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:16px}#ag-wb .wb-step b{grid-row:span 2;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--lime);font:700 15px/1 \"DM Sans\",sans-serif}#ag-wb .wb-step span{font-size:14px;color:var(--muted)}#ag-wb .wb-routes{display:grid;gap:10px;margin-top:16px}#ag-wb .wb-route{display:grid;grid-template-columns:1fr 30px;grid-template-areas:\"when check\" \"text check\";gap:6px 14px;align-items:center;width:100%;text-align:left;padding:14px 16px;border-radius:16px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font:400 15px/1.45 \"DM Sans\",sans-serif;transition:border-color .15s,background .15s}#ag-wb .wb-route:hover{border-color:var(--blue)}#ag-wb .wb-route-when{grid-area:when;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:700 13px/1.2 \"DM Sans\",sans-serif;color:var(--blue)}#ag-wb .wb-route-when small{font-weight:500;color:var(--muted);font-size:13px}#ag-wb .wb-route-when em{font-style:normal;font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--lime);padding:4px 8px;border-radius:99px}#ag-wb .wb-route-text{grid-area:text}#ag-wb .wb-check{grid-area:check;width:28px;height:28px;border-radius:9px;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;background:#fff;color:transparent;flex:0 0 28px}#ag-wb .wb-check svg{width:16px;height:16px;stroke-width:3}#ag-wb .wb-route.is-on{background:#f6fdee;border-color:var(--lime-line)}#ag-wb .wb-route.is-on .wb-check,#ag-wb .wb-done.is-on .wb-check{background:var(--lime);border-color:var(--lime-line);color:var(--ink)}#ag-wb .wb-route.is-on .wb-route-text{color:var(--muted)}#ag-wb .wb-callout{display:grid;gap:4px;margin-top:14px;padding:16px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line);font-size:14px}#ag-wb .wb-bpgrid{display:grid;gap:12px;margin-top:16px}#ag-wb .wb-bpcard{display:flex;gap:14px;padding:16px;border-radius:18px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}#ag-wb .wb-bpcard:hover{border-color:var(--blue);transform:translateY(-1px);color:var(--ink)}#ag-wb .wb-bpcard.is-done{border-color:var(--lime-line);background:#fbfff6}#ag-wb .wb-bpnum{flex:0 0 40px;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font:400 20px/1 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-bpcard.is-done .wb-bpnum{background:var(--lime);color:var(--ink)}#ag-wb .wb-bpbody{display:block;flex:1;min-width:0}#ag-wb .wb-bpbody strong{display:block;font:700 17px/1.25 \"DM Sans\",sans-serif}#ag-wb .wb-bpbody small{display:block;font-size:13px;color:var(--muted);margin-top:2px}#ag-wb .wb-bpmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:13px}#ag-wb .wb-two{display:grid;gap:12px}#ag-wb .wb-card--link{display:grid;gap:8px;position:relative;text-decoration:none;color:var(--ink);padding-right:50px;transition:border-color .15s}#ag-wb .wb-card--link .wb-pill{justify-self:start}#ag-wb .wb-card--link:hover{border-color:var(--blue);color:var(--ink)}#ag-wb .wb-card--link>svg{position:absolute;right:18px;top:50%;margin-top:-11px;width:22px;height:22px;color:var(--blue)}#ag-wb .wb-crumbs{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;font-size:14px}#ag-wb .wb-crumbs a{display:inline-flex;align-items:center;gap:4px;font-weight:700;text-decoration:none;color:var(--ink)}#ag-wb .wb-crumbs a:hover{color:var(--blue)}#ag-wb .wb-bphead{margin-bottom:22px}#ag-wb .wb-take{padding:16px 18px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line)}#ag-wb .wb-take span{display:block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}#ag-wb .wb-vs{display:grid;gap:10px}#ag-wb .wb-vs>div{padding:16px;border-radius:16px;font-size:15px}#ag-wb .wb-vs b{display:block;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}#ag-wb .wb-vs-bad{background:#fff;border:1.5px solid #f0c4c3}#ag-wb .wb-vs-bad b{color:var(--red)}#ag-wb .wb-vs-good{background:#fff;border:1.5px solid var(--lime-line)}#ag-wb .wb-vs-good b{color:#1d7a3a}#ag-wb .wb-master{margin-top:22px;padding:18px;border-radius:18px;background:var(--ink);color:#e9eaf2}#ag-wb .wb-master p{font-size:14px;line-height:1.6;white-space:pre-line}#ag-wb .wb-prompt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}#ag-wb .wb-prompt-head>span{font:700 11px/1.2 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}#ag-wb .wb-copy{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:0;background:var(--lime);color:var(--ink);font:700 13px/1 \"DM Sans\",sans-serif;cursor:pointer;white-space:nowrap}#ag-wb .wb-copy:hover{background:#b9f26d}#ag-wb .wb-copy svg{width:15px;height:15px}#ag-wb .wb-section{margin-top:18px;padding:20px 18px;border-radius:20px;background:#fff;border:1px solid var(--line);scroll-margin-top:90px}#ag-wb .wb-section-head{display:flex;align-items:flex-start;gap:12px}#ag-wb .wb-num{flex:0 0 30px;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font:700 14px/1 \"DM Sans\",sans-serif;margin-top:-2px}#ag-wb .wb-q{margin-top:10px;font-size:15px;color:var(--muted)}#ag-wb .wb-prompt{margin-top:14px;padding:14px;border-radius:14px;background:var(--bg)}#ag-wb .wb-prompt .wb-prompt-head>span{color:var(--blue)}#ag-wb .wb-prompt p{font-size:14px;line-height:1.55;color:var(--muted)}#ag-wb .wb-answer{padding:13px 15px;border-radius:14px;background:var(--card);border:1px solid var(--line);white-space:pre-wrap;font-size:15px;overflow-wrap:anywhere}#ag-wb .wb-answer.is-empty{color:#9a9ea9;font-style:italic}#ag-wb .wb-faqs{display:grid;gap:8px;margin-top:14px}#ag-wb .wb-faq{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0 16px}#ag-wb .wb-faq summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}#ag-wb .wb-faq summary::-webkit-details-marker{display:none}#ag-wb .wb-faq summary::after{content:\"+\";font:400 22px/1 \"DM Sans\",sans-serif;color:var(--blue)}#ag-wb .wb-faq[open] summary::after{content:\"–\"}#ag-wb .wb-faq p{padding-bottom:14px;color:var(--muted);font-size:15px}#ag-wb .wb-res{display:grid;gap:4px;justify-items:start;margin-top:12px;padding:16px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:14px}#ag-wb .wb-res strong{font-size:16px}#ag-wb .wb-res a{word-break:break-all}#ag-wb .wb-done{display:flex;align-items:center;gap:14px;width:100%;margin-top:32px;padding:18px;border-radius:18px;border:1.5px dashed var(--blue);background:#fff;color:var(--ink);font:700 16px/1.35 \"DM Sans\",sans-serif;text-align:left;cursor:pointer}#ag-wb .wb-done .wb-check{width:32px;height:32px;flex-basis:32px}#ag-wb .wb-done.is-on{border-style:solid;border-color:var(--lime-line);background:var(--lime-soft)}#ag-wb .wb-pager{display:grid;gap:10px;margin-top:28px}#ag-wb .wb-pager a{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);font-weight:700}#ag-wb .wb-pager a:hover{border-color:var(--blue)}#ag-wb .wb-pager a.is-next{justify-content:flex-end;text-align:right;background:var(--blue);border-color:var(--blue);color:#fff}#ag-wb .wb-pager small{display:block;font-weight:500;font-size:12px;opacity:.75}#ag-wb .wb-period{margin-top:18px;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-period-head{display:inline-block;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:9px 14px;border-radius:999px;background:var(--ink);color:var(--lime)}#ag-wb .wb-save{position:fixed;left:16px;bottom:16px;z-index:2147482000;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--ink);color:#fff;font:700 13px/1 \"DM Sans\",sans-serif;box-shadow:0 8px 24px rgba(0,9,25,.2);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s}#ag-wb .wb-save.is-on{opacity:1;transform:none}#ag-wb .wb-save svg{width:15px;height:15px;stroke:var(--lime);stroke-width:3}#ag-wb .wb-dot{width:8px;height:8px;border-radius:50%;background:#ffc94d}#ag-wb .wb-save.is-saving .wb-dot{background:var(--lime);animation:agwbPulse 1s ease infinite}#ag-wb .wb-save.is-offline{background:var(--red)}#ag-wb .wb-save.is-offline .wb-dot{background:#fff}@keyframes agwbPulse{50%{opacity:.3}}#ag-wb .wb-toast{position:fixed;left:50%;bottom:16px;z-index:2147482700;transform:translate(-50%,16px);padding:12px 18px;border-radius:999px;background:var(--lime);color:var(--ink);font:700 14px/1.2 \"DM Sans\",sans-serif;box-shadow:0 8px 24px rgba(0,9,25,.2);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 32px);text-align:center}#ag-wb .wb-toast.is-on{opacity:1;transform:translate(-50%,0)}#ag-wb .wb-layer{display:none}#ag-wb .wb-layer.is-on{display:block}#ag-wb .wb-overlay{position:fixed;inset:0;z-index:2147482500;background:rgba(0,9,25,.45)}#ag-wb .wb-drawer{position:fixed;top:0;right:0;bottom:0;z-index:2147482501;width:min(480px,100vw);background:var(--bg);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,9,25,.25);animation:agwbDrawer .25s ease}@keyframes agwbDrawer{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}#ag-wb .wb-drawer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 20px 12px}#ag-wb .wb-drawer-head .wb-h2{font-size:24px;margin-top:10px}#ag-wb .wb-search{display:flex;align-items:center;gap:8px;margin:0 20px 10px;padding:0 14px;height:46px;border-radius:14px;background:#fff;border:1.5px solid var(--line);color:var(--muted)}#ag-wb .wb-search:focus-within{border-color:var(--blue)}#ag-wb .wb-search input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;font:400 16px/1 \"DM Sans\",sans-serif;color:var(--ink);padding:0;margin:0;box-shadow:none;-webkit-appearance:none;appearance:none}#ag-wb .wb-search--inline{margin:0;flex:1 1 260px;max-width:360px}#ag-wb .wb-gloss{flex:1;overflow-y:auto;padding:4px 20px 30px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}#ag-wb .wb-gloss-group{margin-top:16px}#ag-wb .wb-gloss-group h3{font:700 11px/1.3 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}#ag-wb .wb-gloss-group.is-current h3{color:var(--blue)}#ag-wb .wb-term{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--line);margin-bottom:8px}#ag-wb .wb-gloss-group.is-current .wb-term{border-color:#c9c6ff}#ag-wb .wb-term p{font-size:14px;color:var(--muted);margin-top:3px}#ag-wb .wb-gloss-empty{padding:30px 0;text-align:center;color:var(--muted)}#ag-wb .wb-tip{display:grid;gap:4px;margin-top:18px;padding:14px;border-radius:14px;background:var(--lime-soft);font-size:14px}#ag-wb .wb-cohorts{display:grid;gap:12px}#ag-wb .wb-cohort{display:grid;gap:6px;padding:18px;border-radius:20px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);transition:border-color .15s}#ag-wb .wb-cohort:hover{border-color:var(--blue);color:var(--ink)}#ag-wb .wb-cohort.is-closed{background:var(--card)}#ag-wb .wb-cohort-head{display:flex;justify-content:space-between;align-items:center;gap:10px}#ag-wb .wb-cohort-head strong{font:400 22px/1.2 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-cohort-stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);margin-top:6px}#ag-wb .wb-cohort-stats b{color:var(--ink)}#ag-wb [data-newcohort],#ag-wb [data-editcohort]{margin-bottom:16px}#ag-wb .wb-add{margin-bottom:6px}#ag-wb .wb-add .wb-form{margin-top:16px}#ag-wb .wb-tabs{display:inline-flex;padding:4px;border-radius:999px;background:var(--bg)}#ag-wb .wb-tabs button{border:0;background:transparent;padding:8px 16px;border-radius:999px;font:700 14px/1 \"DM Sans\",sans-serif;color:var(--muted);cursor:pointer}#ag-wb .wb-tabs button[aria-selected=\"true\"]{background:var(--ink);color:#fff}#ag-wb .wb-result{margin-top:16px;padding:16px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line);display:grid;gap:8px;justify-items:start;font-size:14px}#ag-wb .wb-result ul{display:grid;gap:4px}#ag-wb .wb-result code{font-size:14px}#ag-wb .wb-people{display:grid;gap:12px;margin-top:14px}#ag-wb .wb-person{display:grid;gap:14px;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-person.is-inactive{background:var(--card);opacity:.85}#ag-wb .wb-person-main strong{display:block;font-size:17px}#ag-wb .wb-person-main span{font-size:14px;overflow-wrap:anywhere}#ag-wb .wb-person-pin{display:flex;align-items:center;gap:6px}#ag-wb .wb-person-pin .wb-label{margin:0 6px 0 0}#ag-wb .wb-person-pin code{min-width:72px}#ag-wb .wb-bpdots{display:flex;gap:5px;margin-top:10px}#ag-wb .wb-bpdots i{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font:700 11px/1 \"DM Sans\",sans-serif;font-style:normal;background:var(--faint);color:var(--muted)}#ag-wb .wb-bpdots i.on{background:var(--lime);color:var(--ink)}#ag-wb .wb-person-meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted)}#ag-wb .wb-person-actions{display:flex;flex-wrap:wrap;gap:8px}#ag-wb .wb-editp{padding-top:14px;border-top:1px solid var(--line)}#ag-wb [data-edit-slot]:empty{display:none}#ag-wb .wb-inactive{margin-top:22px}#ag-wb .wb-inactive summary{cursor:pointer;font-weight:700;color:var(--muted)}#ag-wb .wb-statrow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}#ag-wb .wb-statrow div{padding:14px;border-radius:16px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-statrow b{display:block;font:400 28px/1.1 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-statrow span{font-size:13px;color:var(--muted)}#ag-wb .wb-ro{margin-top:10px;border-radius:18px;background:#fff;border:1px solid var(--line);padding:0 16px}#ag-wb .wb-ro>summary{display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer;list-style:none}#ag-wb .wb-ro>summary::-webkit-details-marker{display:none}#ag-wb .wb-ro>summary strong{display:block}#ag-wb .wb-ro>summary small{display:block;font-size:13px;color:var(--muted)}#ag-wb .wb-ro .wb-bpnum{flex-basis:36px;width:36px;height:36px;font-size:17px}#ag-wb .wb-ro-item{padding:14px 0;border-top:1px solid var(--faint)}#ag-wb .wb-ro-item h4{font:700 15px/1.3 \"DM Sans\",sans-serif}#ag-wb .wb-ro-item .wb-q{font-size:14px;margin:4px 0 10px}#ag-wb .wb-ro .wb-period{border:0;padding:0 0 16px;margin-top:6px}#ag-wb .wb-sessions{display:grid;gap:12px;margin-top:16px}#ag-wb .wb-session{display:flex;flex-direction:column;gap:6px;padding:18px;border-radius:20px;background:#fff;border:1.5px solid var(--line)}#ag-wb .wb-session.is-next{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,17,247,.08)}#ag-wb .wb-session.is-live,#ag-wb .wb-session.is-soon{border-color:transparent;background:linear-gradient(160deg,var(--deep) 0%,#0000d8 100%);color:#fff}#ag-wb .wb-session.is-live .wb-kicker,#ag-wb .wb-session.is-soon .wb-kicker,#ag-wb .wb-session.is-live .wb-session-when,#ag-wb .wb-session.is-soon .wb-session-when{color:#c9cbf5}#ag-wb .wb-session.is-live .wb-small,#ag-wb .wb-session.is-soon .wb-small{color:#c9cbf5}#ag-wb .wb-session.is-ended{background:var(--card)}#ag-wb .wb-session-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px}#ag-wb .wb-session-title{display:block;font:400 22px/1.2 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-session-when{font-size:15px;color:var(--muted)}#ag-wb .wb-session-when small{font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap}#ag-wb .wb-session-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:10px}#ag-wb .wb-session-actions .wb-small{margin:0}#ag-wb .wb-chip--live{background:#ff3b30;color:#fff}#ag-wb .wb-chip--live i{width:7px;height:7px;border-radius:50%;background:#fff;animation:agwbPulse 1s ease infinite}#ag-wb .wb-h4{font:700 16px/1.3 \"DM Sans\",sans-serif;color:var(--ink)}#ag-wb .wb-h4 .wb-muted{font-weight:400;font-size:14px}#ag-wb .wb-sessnew{display:grid;gap:12px;margin-top:6px}#ag-wb .wb-sessnew .wb-small{margin-top:0}#ag-wb .wb-fieldset{display:grid;gap:12px;margin:0;padding:14px 14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);min-width:0}#ag-wb .wb-fieldset legend{padding:0 6px;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}#ag-wb .wb-grid4{display:grid;grid-template-columns:1fr 1fr;gap:12px}#ag-wb .wb-grid4>label:first-child,#ag-wb .wb-grid4>label:nth-child(2){grid-column:span 2}#ag-wb .wb-warn{display:inline-block;font:700 12px/1.2 \"DM Sans\",sans-serif;color:#8a4b00;background:#fff1d6;border-radius:999px;padding:4px 9px}#ag-wb .wb-cohort-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;color:var(--ink)}#ag-wb .wb-sessadmin{margin-bottom:16px}#ag-wb .wb-sessadmin>.wb-row{align-items:center;margin-bottom:4px}#ag-wb .wb-small0{font-size:13px}#ag-wb .wb-sessrow{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--faint)}#ag-wb .wb-sessadmin>.wb-row+.wb-sessrow{border-top:0}#ag-wb .wb-sessrow-main{display:grid;gap:2px;min-width:0}#ag-wb .wb-sessrow-main strong{font-size:16px}#ag-wb .wb-sessrow-main .wb-muted{font-size:14px}#ag-wb .wb-sessrow>.wb-btn{justify-self:start}#ag-wb .wb-sesslinks{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px}#ag-wb .wb-sesslinks a{display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none}#ag-wb .wb-sesslinks svg{width:16px;height:16px}#ag-wb .wb-sessform{padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}#ag-wb [data-sess-slot]:empty{display:none}#ag-wb .wb-clock{display:grid;gap:18px;margin-bottom:16px;padding:22px;border-radius:24px;background:var(--ink);color:#fff;position:relative;overflow:hidden}#ag-wb .wb-clock::after{content:\"\";position:absolute;left:-60px;bottom:-80px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(26,17,247,.45),transparent 70%);pointer-events:none}#ag-wb .wb-clock>div{position:relative;z-index:1}#ag-wb .wb-clock .wb-kicker{color:#8a90a2}#ag-wb .wb-clock-main{display:grid;gap:8px;align-content:start}#ag-wb .wb-clock-side{display:grid;gap:10px;align-content:start;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}#ag-wb .wb-clock-side .wb-pill{justify-self:start}#ag-wb .wb-clock-side .wb-h3{color:#fff}#ag-wb .wb-clock-side p{font-size:14px;color:#c9cbf5}#ag-wb .wb-clock-side .wb-btn{justify-self:start}#ag-wb .wb-clock-side .wb-bar{margin-top:2px}#ag-wb .wb-clock-meta{font-size:13px;color:#c9cbf5}#ag-wb .wb-clock-title{font:400 26px/1.15 \"DM Serif Display\",Georgia,serif;color:#fff}#ag-wb .wb-clock-sub{font-size:14px;color:#c9cbf5}#ag-wb .wb-clock-main .wb-btn{justify-self:start;margin-top:6px}#ag-wb .wb-count{display:flex;flex-wrap:wrap;gap:8px}#ag-wb .wb-count>span{display:flex;align-items:baseline;gap:3px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.08)}#ag-wb .wb-count b{font:400 42px/1 \"DM Serif Display\",Georgia,serif;color:var(--lime);font-variant-numeric:tabular-nums}#ag-wb .wb-count small{font-size:13px;color:#c9cbf5}#ag-wb .wb-count--inline{display:inline;font-weight:700;color:var(--lime)}#ag-wb .wb-today{list-style:none;padding:0;margin:0;display:grid;gap:8px}#ag-wb .wb-today li{display:flex;gap:9px;font-size:14px;line-height:1.45;color:#e9eaf2}#ag-wb .wb-today li svg{flex:0 0 20px;width:20px;height:20px;padding:3px;border-radius:6px;background:rgba(255,255,255,.12);color:transparent;stroke-width:3;margin-top:1px}#ag-wb .wb-today li.is-on svg{background:var(--lime);color:var(--ink)}#ag-wb .wb-today li.is-on span{color:#8a90a2;text-decoration:line-through}#ag-wb .wb-today b{color:#fff}#ag-wb .wb-clock-contest{display:flex;gap:10px;align-items:flex-start;margin-top:4px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12);font-size:14px;color:#e9eaf2}#ag-wb .wb-clock-contest svg{flex:0 0 22px;width:22px;height:22px;color:var(--lime)}#ag-wb .wb-clock-contest small{display:block;font-size:12px;color:#8a90a2;margin-top:3px}#ag-wb .wb-three{display:grid;gap:12px}#ag-wb .wb-card--guide{border-color:var(--blue)}#ag-wb .wb-tabs2{display:flex;gap:4px;padding:4px;margin:4px 0 8px;border-radius:16px;background:#e6e6ea;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}#ag-wb .wb-tabs2::-webkit-scrollbar{display:none}#ag-wb .wb-tab{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 14px;border-radius:12px;text-decoration:none;color:var(--muted);font:700 14px/1.1 \"DM Sans\",sans-serif;white-space:nowrap}#ag-wb .wb-tab:hover{color:var(--ink)}#ag-wb .wb-tab small{font-size:11px;font-weight:700;padding:3px 7px;border-radius:99px;background:rgba(0,9,25,.08)}#ag-wb .wb-tab.is-on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,9,25,.12)}#ag-wb .wb-tab.is-on small{background:var(--lime)}#ag-wb .wb-sec--first{margin-top:22px}#ag-wb .wb-bpcallout{display:flex;gap:12px;margin:16px 0 4px;padding:16px;border-radius:16px;background:#ecebff;border:1px solid #c9c6ff}#ag-wb .wb-bpcallout svg{flex:0 0 24px;width:24px;height:24px;color:var(--blue);margin-top:1px}#ag-wb .wb-bpcallout strong{display:block;font-size:15px}#ag-wb .wb-bpcallout p{font-size:14px;color:#2b2f3a;margin-top:3px}#ag-wb .wb-kitcta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;padding:18px;border-radius:18px;background:var(--ink);color:#fff;text-decoration:none}#ag-wb .wb-kitcta>span{display:grid;gap:3px}#ag-wb .wb-kitcta .wb-kicker{color:var(--lime)}#ag-wb .wb-kitcta strong{font-size:17px}#ag-wb .wb-kitcta .wb-muted{color:#c9cbf5;font-size:14px}#ag-wb .wb-kitcta>svg{width:26px;height:26px;color:var(--lime);flex:0 0 26px}#ag-wb .wb-kitcta:hover{color:#fff;background:#0b1430}#ag-wb .wb-kitcta+.wb-done{margin-top:12px}#ag-wb .wb-prepref{margin-top:12px;padding:12px 14px;border-radius:14px;background:#f6fdee;border:1px dashed var(--lime-line);font-size:14px}#ag-wb .wb-prepref-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}#ag-wb .wb-prepref-head span{font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#1d7a3a}#ag-wb .wb-prepref-head a{font-size:13px;font-weight:700}#ag-wb .wb-prepref p{white-space:pre-line;margin-top:3px}#ag-wb .wb-section.is-flash{animation:agwbFlash 1.8s ease}@keyframes agwbFlash{0%,40%{box-shadow:0 0 0 4px var(--lime)}100%{box-shadow:0 0 0 0 transparent}}#ag-wb .wb-kit{margin-top:22px}#ag-wb .wb-kit-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}#ag-wb .wb-kit .wb-lead{font-size:16px}#ag-wb .wb-case{margin-top:14px;padding:16px;border-radius:16px;background:#fff;border-left:4px solid var(--blue)}#ag-wb .wb-case span{display:block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px}#ag-wb .wb-kit-howto{display:grid;gap:8px;margin-top:14px}#ag-wb .wb-kit-howto>div{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:14px}#ag-wb .wb-kit-howto b{flex:0 0 26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--lime);font-size:13px}#ag-wb .wb-kit-sec{margin-top:26px}#ag-wb .wb-kit-sec>.wb-h3{display:flex;align-items:center;gap:10px;margin-bottom:12px}#ag-wb .wb-kit-sec>.wb-h3 .wb-num{margin:0}#ag-wb .wb-compare{display:grid;gap:10px}#ag-wb .wb-compare>div{padding:14px 16px;border-radius:14px;font-size:15px}#ag-wb .wb-compare span{display:block;font:700 11px/1.2 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}#ag-wb .wb-compare-l{background:#fff;border:1.5px dashed var(--line);color:var(--muted)}#ag-wb .wb-compare-r{background:#fff;border:1.5px solid var(--lime-line)}#ag-wb .wb-compare-r span{color:#1d7a3a}#ag-wb .wb-changes{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-top:10px;font-size:14px}#ag-wb .wb-changes b{font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}#ag-wb .wb-changes ol{display:contents;counter-reset:ch}#ag-wb .wb-changes li{list-style:none;counter-increment:ch}#ag-wb .wb-changes li::before{content:counter(ch);display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:5px;border-radius:50%;background:var(--blue);color:#fff;font:700 11px/1 \"DM Sans\",sans-serif}#ag-wb .wb-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line);background:#fff}#ag-wb .wb-table{width:100%;border-collapse:collapse;font-size:14px}#ag-wb .wb-table.is-wide{min-width:540px}#ag-wb .wb-table th,#ag-wb .wb-table td{padding:10px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--faint)}#ag-wb .wb-table thead th{border-top:0;background:var(--bg);font:700 12px/1.3 \"DM Sans\",sans-serif;color:var(--muted)}#ag-wb .wb-table tbody th{font-weight:700}#ag-wb .wb-table.has-total tbody tr:last-child{background:#f6fdee;font-weight:700}#ag-wb .wb-note2{margin-top:8px;font-size:13px;color:var(--muted)}#ag-wb .wb-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}#ag-wb .wb-flow-step{padding:9px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:700}#ag-wb .wb-flow-step:first-child{background:var(--ink);border-color:var(--ink);color:#fff}#ag-wb .wb-flow i{font-style:normal;color:var(--blue);font-weight:700}#ag-wb .wb-template ul{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px}#ag-wb .wb-template li{padding:10px 12px;border-radius:12px;background:#fff;border:1px dashed var(--line);font-size:14px}#ag-wb .wb-template li::after{content:\" ______\";color:#b4b8c2}#ag-wb .wb-rubric>.wb-row{align-items:center}#ag-wb .wb-rubcount{font:400 26px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-checkrow{display:flex;align-items:flex-start;gap:12px;width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font:500 15px/1.45 \"DM Sans\",sans-serif;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}#ag-wb .wb-checkrow:hover{border-color:var(--blue)}#ag-wb .wb-checkrow .wb-check{flex:0 0 26px;width:26px;height:26px}#ag-wb .wb-checkrow.is-on{background:#f6fdee;border-color:var(--lime-line)}#ag-wb .wb-checkrow.is-on .wb-check{background:var(--lime);border-color:var(--lime-line);color:var(--ink)}#ag-wb .wb-checkrow.wb-done{margin-top:16px;font-weight:700;border-style:dashed;border-color:var(--blue)}#ag-wb .wb-checkrow.wb-done.is-on{border-style:solid;border-color:var(--lime-line);background:var(--lime-soft)}#ag-wb .wb-checkrow:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-errors{display:grid;gap:8px}#ag-wb .wb-error{display:flex;gap:10px;padding:13px 14px;border-radius:14px;background:#fff;border:1px solid #f0c4c3;font-size:14px}#ag-wb .wb-error svg{flex:0 0 20px;width:20px;height:20px;color:var(--red);margin-top:1px}#ag-wb .wb-kprompt{display:grid;gap:10px;justify-items:start;padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}#ag-wb .wb-kprompt:first-of-type{border-top:0;padding-top:0}#ag-wb .wb-kprompt p{font-size:14px;line-height:1.55}#ag-wb .wb-variant{padding:16px;border-radius:16px;background:#ecebff}#ag-wb .wb-variant span{display:block;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px}#ag-wb .wb-variant p{font-size:14px}#ag-wb .wb-tool-card{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:14px;padding:18px;border-radius:18px;background:#fff;border:2px solid var(--blue);box-shadow:0 6px 18px rgba(26,17,247,.08)}#ag-wb .wb-tool-head{display:flex;gap:12px;align-items:flex-start}#ag-wb .wb-tool-head svg{flex:0 0 36px;width:36px;height:36px;padding:7px;border-radius:10px;background:var(--blue);color:#fff}#ag-wb .wb-tool-head strong{display:block;font-size:16px}#ag-wb .wb-tool-head span{display:block;font-size:13px;color:var(--muted)}#ag-wb .wb-calc-inputs{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}#ag-wb .wb-input{min-width:0}#ag-wb .wb-tool-card .wb-btn,#ag-wb .wb-template .wb-btn{white-space:normal;text-align:left;line-height:1.3}#ag-wb .wb-field .wb-hint{color:var(--muted);font-weight:400}#ag-wb .wb-input--sm{height:44px;font-size:15px;padding:0 12px;border-radius:12px}#ag-wb select.wb-input--sm{padding-right:8px;background:#fff;-webkit-appearance:menulist;appearance:menulist}#ag-wb .wb-field em{font-style:normal;font-weight:500;color:#1d7a3a}#ag-wb .wb-tool-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}#ag-wb .wb-tool-rows>div{padding:10px 12px;border-radius:12px;background:var(--bg)}#ag-wb .wb-tool-rows span{display:block;font-size:12px;color:var(--muted)}#ag-wb .wb-tool-rows b{font:400 22px/1.2 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-tool-card>.wb-btn{justify-self:start}#ag-wb .wb-score{display:grid;gap:8px}#ag-wb .wb-score-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;font-size:14px}#ag-wb .wb-score-total{font-weight:700}#ag-wb .wb-score-total b{font:400 24px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue);text-align:center}#ag-wb .wb-sliders{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}#ag-wb .wb-slider{display:grid;grid-template-columns:minmax(0,1fr) 34px;min-width:0;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px}#ag-wb .wb-slider span{grid-column:1 / -1;font-weight:700}#ag-wb .wb-slider input{width:100%;accent-color:var(--blue);margin:0}#ag-wb .wb-slider b{font:400 22px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue);text-align:right}#ag-wb .wb-slider.is-low{background:#fff1d6;outline:2px solid #f5c26b}#ag-wb .wb-slider.is-low input{accent-color:#c77700}#ag-wb .wb-slider.is-low b{color:#8a4b00}#ag-wb .wb-mats{display:grid;gap:10px;margin-top:14px}#ag-wb .wb-mat{display:grid;grid-template-columns:42px 1fr;gap:6px 12px;padding:14px;border-radius:16px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-mat-icon svg{width:42px;height:42px;padding:9px;border-radius:12px;background:#ecebff;color:var(--blue)}#ag-wb .wb-mat-body strong{display:block;font-size:15px}#ag-wb .wb-mat-body p{font-size:13px;color:var(--muted);margin-top:2px}#ag-wb .wb-mat-type{display:inline-block;margin-top:6px;font:700 10px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}#ag-wb .wb-mat-actions{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}#ag-wb .wb-stack-list{display:grid;gap:6px;padding-bottom:14px}#ag-wb .wb-stack-tool{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border-radius:12px;background:var(--bg);text-decoration:none;color:var(--ink)}#ag-wb .wb-stack-tool:hover{background:#ecebff;color:var(--ink)}#ag-wb .wb-stack-tool span{grid-column:1;font-size:13px;color:var(--muted)}#ag-wb .wb-stack-tool em{grid-row:1 / span 2;grid-column:2;align-self:center;font:700 11px/1 \"DM Sans\",sans-serif;font-style:normal;padding:5px 9px;border-radius:99px;background:var(--ink);color:#fff}#ag-wb .wb-stack-tool em.is-min{background:var(--lime);color:var(--ink)}#ag-wb .wb-gchoice{margin-bottom:18px}#ag-wb .wb-gopts{display:grid;gap:10px;margin-top:10px}#ag-wb .wb-gopt{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border-radius:18px;border:1.5px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;text-align:left;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s}#ag-wb .wb-gopt:hover{border-color:var(--blue);color:var(--ink);box-shadow:0 6px 18px rgba(26,17,247,.1)}#ag-wb .wb-gopt svg{flex:0 0 44px;width:44px;height:44px;padding:10px;border-radius:12px;background:var(--blue);color:#fff}#ag-wb .wb-gopt:nth-child(2) svg{background:var(--ink);color:var(--lime)}#ag-wb .wb-gopt:nth-child(3) svg{background:var(--lime);color:var(--ink)}#ag-wb .wb-gopt span{display:grid;gap:2px}#ag-wb .wb-gopt strong{font-size:16px}#ag-wb .wb-gopt small{font-size:13px;color:var(--muted)}#ag-wb .wb-gopt:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-video{display:grid;gap:12px;margin-bottom:18px}#ag-wb .wb-video-frame{position:relative;padding-top:56.25%;border-radius:18px;overflow:hidden;background:var(--ink)}#ag-wb .wb-video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}#ag-wb .wb-chapters{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#ag-wb .wb-chapter{display:inline-flex;gap:6px;align-items:center;padding:7px 11px;border-radius:99px;border:1px solid var(--line);background:#fff;font:500 13px/1.2 \"DM Sans\",sans-serif;color:var(--ink);cursor:pointer}#ag-wb .wb-chapter b{color:var(--blue);font-variant-numeric:tabular-nums}#ag-wb .wb-chapter:hover{border-color:var(--blue)}#ag-wb .wb-prepcta{display:flex;align-items:center;gap:16px;padding:18px;border-radius:20px;background:#fff;border:2px solid var(--blue);text-decoration:none;color:var(--ink)}#ag-wb .wb-prepcta>span{flex:1;display:grid;gap:4px}#ag-wb .wb-prepcta .wb-kicker{color:var(--blue)}#ag-wb .wb-prepcta .wb-muted{font-size:14px}#ag-wb .wb-prepcta-n{font:400 40px/1 \"DM Serif Display\",Georgia,serif;color:var(--blue)}#ag-wb .wb-prepcta-n small{font-size:.45em;color:var(--muted)}#ag-wb .wb-prepcta:hover{color:var(--ink);box-shadow:0 6px 18px rgba(26,17,247,.12)}#ag-wb .wb-gchs{display:grid;gap:8px;margin-top:14px}#ag-wb .wb-gch{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;background:#fff;border:1.5px solid var(--line);text-decoration:none;color:var(--ink)}#ag-wb .wb-gch:hover{border-color:var(--blue);color:var(--ink)}#ag-wb .wb-gch.is-read{background:var(--card)}#ag-wb .wb-gch.is-prep{border-color:var(--blue)}#ag-wb .wb-gch-n{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--lime);font:400 18px/1 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-gch.is-read .wb-gch-n{background:var(--lime);color:var(--ink)}#ag-wb .wb-gch-body{flex:1;display:grid;gap:3px;justify-items:start}#ag-wb .wb-gch-body small{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}#ag-wb .wb-gch-body strong{font-size:16px;line-height:1.3}#ag-wb .wb-gch>svg{color:var(--blue)}#ag-wb .wb-gchapter{max-width:720px}#ag-wb .wb-gp{font-size:17px;line-height:1.65;margin-top:16px;color:#1d2130}#ag-wb .wb-gh3{margin-top:28px}#ag-wb .wb-gcallout{margin-top:18px;padding:16px 18px;border-radius:16px;background:var(--lime-soft);border:1px solid var(--lime-line);font:400 20px/1.35 \"DM Serif Display\",Georgia,serif}#ag-wb .wb-quote{margin:22px 0 0;padding:22px;border-radius:18px;background:var(--ink);color:#fff}#ag-wb .wb-quote p{font:400 24px/1.3 \"DM Serif Display\",Georgia,serif;color:var(--lime)}#ag-wb .wb-quote cite{display:block;margin-top:10px;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;color:#8a90a2}#ag-wb .wb-gchecks{margin-top:20px;padding:18px;border-radius:18px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-gchecks ul,#ag-wb .wb-symptoms{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}#ag-wb .wb-gchecks li,#ag-wb .wb-symptoms li{display:flex;gap:10px;font-size:15px}#ag-wb .wb-gchecks li svg{flex:0 0 22px;width:22px;height:22px;padding:4px;border-radius:7px;background:var(--lime);stroke-width:3}#ag-wb .wb-symptoms{margin-top:14px}#ag-wb .wb-symptoms li{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #f0c4c3}#ag-wb .wb-symptoms li svg{flex:0 0 20px;width:20px;height:20px;color:var(--red)}#ag-wb .wb-glist{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}#ag-wb .wb-glist li{display:grid;gap:6px;justify-items:start;padding:14px 16px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:15px}#ag-wb .wb-gnum{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}#ag-wb .wb-gnum li{display:flex;gap:12px;padding:14px 16px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:15px}#ag-wb .wb-gnum b{flex:0 0 28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:14px}#ag-wb .wb-chain,#ag-wb .wb-concepts{display:grid;gap:8px;margin-top:16px}#ag-wb .wb-chain-item,#ag-wb .wb-concept{border-radius:16px;background:#fff;border:1px solid var(--line);padding:0 16px}#ag-wb .wb-chain-item>summary,#ag-wb .wb-concept>summary{display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer;list-style:none}#ag-wb .wb-chain-item>summary::-webkit-details-marker,#ag-wb .wb-concept>summary::-webkit-details-marker{display:none}#ag-wb .wb-chain-item>summary::after,#ag-wb .wb-concept>summary::after{content:\"+\";margin-left:auto;font:400 22px/1 \"DM Sans\",sans-serif;color:var(--blue)}#ag-wb .wb-chain-item[open]>summary::after,#ag-wb .wb-concept[open]>summary::after{content:\"–\"}#ag-wb .wb-chain-item summary strong{display:block}#ag-wb .wb-chain-item summary small{display:block;font-size:14px;color:var(--muted)}#ag-wb .wb-chain-item .wb-bpnum,#ag-wb .wb-concept .wb-bpnum{flex:0 0 36px;width:36px;height:36px;font-size:18px}#ag-wb .wb-chain-body{display:grid;gap:8px;padding:0 0 16px 48px;font-size:14px}#ag-wb .wb-chain-skip{color:#8a2420}#ag-wb .wb-chain-body a{display:inline-flex;align-items:center;gap:4px;font-weight:700;text-decoration:none}#ag-wb .wb-chain-body a svg{width:16px;height:16px}#ag-wb .wb-concept summary small{font-size:13px;color:var(--muted)}#ag-wb .wb-cterm{padding:12px 0;border-top:1px solid var(--faint);font-size:14px}#ag-wb .wb-cterm strong{font-size:15px}#ag-wb .wb-why{margin-top:4px;color:#1d7a3a}#ag-wb .wb-week{display:grid;gap:8px;margin-top:16px}#ag-wb .wb-day{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:13px}#ag-wb .wb-day.is-live{border-color:var(--blue)}#ag-wb .wb-day-name{display:block;font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}#ag-wb .wb-day p{margin-top:6px}#ag-wb .wb-day p b{display:block;font-size:12px;color:var(--muted)}#ag-wb .wb-day p.is-live{padding:8px 10px;border-radius:10px;background:var(--ink);color:#fff}#ag-wb .wb-day p.is-live b{color:var(--lime)}#ag-wb .wb-prepbar{display:flex;align-items:center;gap:12px;margin-top:20px;padding:14px 16px;border-radius:16px;background:var(--ink);color:#fff;font-weight:700}#ag-wb .wb-prepbar .wb-bar{flex:1;margin:0;background:rgba(255,255,255,.18)}#ag-wb .wb-prepbar .wb-bar i{background:var(--lime)}#ag-wb .wb-prepbar b{color:var(--lime)}#ag-wb .wb-prepgroup{display:grid;gap:12px;margin-top:22px;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-prepgroup .wb-checkrow{margin-top:0}#ag-wb .wb-prepfield>span{font-size:15px}#ag-wb .wb-hint{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:-3px}#ag-wb .wb-ta--sm{min-height:60px;font-size:15px}#ag-wb .wb-attitude{display:flex;gap:12px;font-size:15px}#ag-wb .wb-attitude b{flex:0 0 28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--lime)}#ag-wb .wb-small--top{margin-top:0}#ag-wb .wb-ro-check{font-size:14px;padding:4px 0}#ag-wb .wb-ro-prep .wb-prepgroup{margin:0 0 12px;padding:0;border:0}#ag-wb .wb-prepline{margin-top:6px}#ag-wb .wb-fab-slot:empty{display:none}#ag-wb .wb-fab{position:fixed;right:16px;bottom:16px;z-index:2147482400;display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px 0 16px;border:0;border-radius:999px;background:var(--blue);color:#fff;font:700 15px/1 \"DM Sans\",sans-serif;cursor:pointer;box-shadow:0 10px 30px rgba(26,17,247,.35);transition:transform .15s,background .15s}#ag-wb .wb-fab:hover{background:var(--blue-h);transform:translateY(-1px)}#ag-wb .wb-fab svg{width:20px;height:20px;stroke:var(--lime)}#ag-wb .wb-fab--locked{background:var(--ink);box-shadow:0 10px 30px rgba(0,9,25,.25)}#ag-wb .wb-fab--locked svg{stroke:#9aa0b4}#ag-wb .wb-fab:focus-visible{outline:3px solid var(--lime);outline-offset:3px}#ag-wb .wb-pill svg{width:13px;height:13px;vertical-align:-2px;margin-right:5px}#ag-wb .wb-drawer-btns{display:flex;gap:4px}#ag-wb .wb-cop{width:min(520px,100vw)}#ag-wb .wb-cop-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 16px 12px}#ag-wb .wb-cop-status{font-size:13px;color:var(--muted);padding:0 4px 10px;margin:0}#ag-wb .wb-cop-status b{color:var(--ink)}#ag-wb .wb-cop-status.is-warn{color:#8a4b00;background:#fff1d6;border-radius:12px;padding:10px 12px;margin-bottom:10px}#ag-wb .wb-cop-msgs{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 4px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}#ag-wb .wb-msg{max-width:92%;font-size:15px;line-height:1.55}#ag-wb .wb-msg--u{align-self:flex-end;background:var(--blue);color:#fff;padding:10px 14px;border-radius:18px 18px 4px 18px}#ag-wb .wb-msg--a{align-self:flex-start;background:#fff;border:1px solid var(--line);padding:12px 14px;border-radius:18px 18px 18px 4px;width:92%}#ag-wb .wb-msg--err{align-self:stretch;display:flex;gap:8px;align-items:flex-start;background:#fff5f5;color:var(--red);border-radius:14px;padding:10px 12px;font-size:14px;max-width:none}#ag-wb .wb-md p,#ag-wb .wb-md ul,#ag-wb .wb-md ol{margin:0 0 8px}#ag-wb .wb-md>*:last-child{margin-bottom:0}#ag-wb .wb-md ul,#ag-wb .wb-md ol{padding-left:20px}#ag-wb .wb-md li{margin:3px 0}#ag-wb .wb-md h4{font:700 15px/1.3 \"DM Sans\",sans-serif;margin:12px 0 6px}#ag-wb .wb-md h4:first-child{margin-top:0}#ag-wb .wb-md code{font:600 13px/1.3 ui-monospace,Menlo,monospace;letter-spacing:0;background:var(--bg);padding:1px 5px;border-radius:6px}#ag-wb .wb-md hr{border:0;border-top:1px solid var(--line);margin:10px 0}#ag-wb .wb-msg--typing{display:flex;align-items:center;gap:10px;color:var(--muted);width:auto}#ag-wb .wb-msg--typing small{font-size:13px}#ag-wb .wb-dots{display:inline-flex;gap:4px}#ag-wb .wb-dots i{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:agwbDot 1.2s infinite ease-in-out}#ag-wb .wb-dots i:nth-child(2){animation-delay:.15s}#ag-wb .wb-dots i:nth-child(3){animation-delay:.3s}@keyframes agwbDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}#ag-wb .wb-prop{margin-top:12px;padding:12px;border-radius:14px;background:var(--lime-soft);border:1px solid var(--lime-line)}#ag-wb .wb-prop-head{display:grid;gap:2px;margin-bottom:8px}#ag-wb .wb-prop-head strong{font-size:14px}#ag-wb .wb-prop-text{white-space:pre-wrap;font-size:14.5px;line-height:1.5;background:#fff;border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}#ag-wb .wb-prop-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:14px}#ag-wb .wb-prop-actions .wb-ok{display:inline-flex;align-items:center;gap:5px}#ag-wb .wb-prop-actions .wb-ok svg{width:16px;height:16px}#ag-wb .wb-prop--doubt{background:#efeeff;border-color:#d3d0ff}#ag-wb .wb-prop--doubt .wb-ta{min-height:60px;font-size:14.5px}#ag-wb .wb-prop--doubt .wb-ok{display:flex;gap:6px;align-items:flex-start;font-size:14px;margin:0}#ag-wb .wb-cop-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px}#ag-wb .wb-cop-chips:empty{display:none}#ag-wb .wb-cop-form{display:flex;align-items:flex-end;gap:8px;padding:8px;border-radius:18px;background:#fff;border:1.5px solid var(--line)}#ag-wb .wb-cop-form:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(26,17,247,.12)}#ag-wb .wb-cop-input{flex:1;min-width:0;border:0;outline:none;resize:none;background:transparent;font:400 16px/1.45 \"DM Sans\",sans-serif;color:var(--ink);padding:8px 6px;max-height:160px;min-height:40px;margin:0}#ag-wb .wb-cop-input:disabled{background:transparent;color:var(--muted)}#ag-wb .wb-cop-send{flex:0 0 42px;width:42px;height:42px;border:0;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}#ag-wb .wb-cop-send:disabled{background:var(--faint);color:var(--muted);cursor:default}#ag-wb .wb-cop-send svg{width:19px;height:19px}#ag-wb .wb-cop-note{font-size:12px;color:var(--muted);margin:8px 4px 0;line-height:1.4}#ag-wb .wb-cop-locked{display:grid;gap:10px;padding:10px 6px;justify-items:start}#ag-wb .wb-cop-locked>svg{width:34px;height:34px;color:var(--muted)}#ag-wb .wb-cop-locked p{color:var(--muted)}#ag-wb .wb-cop-locked ul{display:grid;gap:6px;font-size:14px;color:var(--muted)}#ag-wb .wb-chipbtn{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border-radius:999px;border:1.5px solid #c9c6ff;background:#fff;color:var(--blue);font:700 13px/1.2 \"DM Sans\",sans-serif;cursor:pointer;text-align:left}#ag-wb .wb-chipbtn:hover{border-color:var(--blue);background:#f6f5ff}#ag-wb .wb-chipbtn svg{width:15px;height:15px}#ag-wb .wb-chipbtn--ghost{border-color:var(--line);color:var(--ink)}#ag-wb .wb-chipbtn--ghost:hover{border-color:var(--ink);background:#fff}#ag-wb .wb-chipbtn.is-on{background:var(--ink);border-color:var(--ink);color:#fff}#ag-wb .wb-chipbtn:focus-visible,#ag-wb .wb-linkbtn:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#ag-wb .wb-secbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}#ag-wb .wb-secbar--top{margin:18px 0 6px}#ag-wb .wb-secbar-label{display:inline-flex;align-items:center;gap:5px;font:700 11px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-right:2px}#ag-wb .wb-secbar-label svg{width:15px;height:15px}#ag-wb .wb-section:not(.has-answer) .is-filled-only,#ag-wb .wb-section.has-answer .is-empty-only{display:none}#ag-wb .wb-prompt-btns{display:inline-flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}#ag-wb .wb-copy--cop{background:var(--blue);color:#fff}#ag-wb .wb-copy--cop:hover{background:var(--blue-h);color:#fff}#ag-wb .wb-copy--cop svg{stroke:var(--lime)}#ag-wb .wb-kprompt .wb-prompt-btns{margin-top:8px}#ag-wb .wb-copnudge{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:start;margin-top:12px;padding:14px;border-radius:16px;background:#efeeff;border:1px solid #d3d0ff}#ag-wb .wb-copnudge>svg{width:22px;height:22px;color:var(--blue);margin-top:2px}#ag-wb .wb-copnudge span{display:block;font-size:14px;color:var(--muted);margin-top:2px}#ag-wb .wb-copnudge .wb-actions{grid-column:2}#ag-wb .wb-linkbtn{border:0;background:none;padding:0;color:var(--blue);font:700 13px/1.2 \"DM Sans\",sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}#ag-wb [data-doubt-slot]:empty{display:none}#ag-wb .wb-doubtform{display:grid;gap:10px;margin-top:12px;padding:14px;border-radius:16px;background:var(--bg)}#ag-wb .wb-doubt-ok{display:flex;gap:6px;align-items:flex-start;margin-top:10px;font-size:14px}#ag-wb .wb-doubts{display:grid;gap:10px;margin-top:14px}#ag-wb .wb-doubt,#ag-wb .wb-adoubt{display:grid;gap:8px;padding:14px 16px;border-radius:16px;background:#fff;border:1px solid var(--line)}#ag-wb .wb-doubt-top{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:13px}#ag-wb .wb-doubt p,#ag-wb .wb-adoubt-text{font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}#ag-wb .wb-doubt-reply{padding:10px 12px;border-radius:12px;background:var(--lime-soft);font-size:14px}#ag-wb .wb-doubt-reply b{font-size:11px;letter-spacing:.1em;text-transform:uppercase}#ag-wb .wb-doubt-reply p{margin-top:4px;white-space:pre-wrap}#ag-wb .wb-doubt .wb-linkbtn{justify-self:start}#ag-wb .wb-doubt-group{font:700 12px/1.3 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}#ag-wb .wb-adoubt{margin-bottom:10px}#ag-wb .wb-adoubt-text{font-size:16px;font-weight:500}#ag-wb .wb-adoubt-ans summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--blue)}#ag-wb .wb-adoubt-ans p{margin-top:6px;font-size:14px;color:var(--muted);white-space:pre-wrap}#ag-wb [data-reply-slot]:empty{display:none}#ag-wb .wb-replyform{padding-top:10px;border-top:1px solid var(--line)}#ag-wb .wb-session-cal{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--faint);font-size:13px;color:var(--muted)}#ag-wb .wb-session-cal svg{width:15px;height:15px}#ag-wb .wb-session-cal a,#ag-wb .wb-session-cal button{border:0;background:none;padding:0;font:700 13px/1.2 \"DM Sans\",sans-serif;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:3px}#ag-wb .wb-session.is-live .wb-session-cal,#ag-wb .wb-session.is-soon .wb-session-cal{border-color:rgba(255,255,255,.18);color:#c9cbf5}#ag-wb .wb-session.is-live .wb-session-cal a,#ag-wb .wb-session.is-live .wb-session-cal button,#ag-wb .wb-session.is-soon .wb-session-cal a,#ag-wb .wb-session.is-soon .wb-session-cal button{color:var(--lime)}#ag-wb .wb-btn--flat{margin-top:0}#ag-wb .wb-fus{display:grid;gap:14px;margin-top:22px}#ag-wb .wb-fu{display:grid;gap:14px}#ag-wb .wb-fu.is-open{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,17,247,.08)}#ag-wb .wb-fu-goal{padding:12px 14px;border-radius:14px;background:var(--bg);display:grid;gap:4px;font-size:14.5px}#ag-wb .wb-fu-status{display:flex;flex-wrap:wrap;gap:6px}#ag-wb .wb-fu .wb-checkrow{margin-top:0}#ag-wb .wb-fu .wb-ok{display:inline-flex;gap:6px;align-items:center;font-size:14px}#ag-wb .wb-fu-table th small{display:block;font-weight:400;color:var(--muted);font-size:12px}#ag-wb .wb-fu-table td{vertical-align:top}#ag-wb .wb-fu-table .wb-warn{display:inline-flex;align-items:center;gap:4px;margin-top:4px}#ag-wb .wb-fu-table .wb-warn svg{width:13px;height:13px}#ag-wb .wb-copset{margin-top:18px;display:grid;gap:10px}#ag-wb .wb-copset .wb-bar{margin-top:0}#ag-wb .wb-copset-main{display:grid;gap:2px}#ag-wb .wb-copset-main .wb-kicker svg,#ag-wb .wb-auto-row strong svg,#ag-wb .wb-label svg{width:13px;height:13px;vertical-align:-2px;margin-right:4px}#ag-wb .wb-copset-main strong{font-size:18px}#ag-wb .wb-copset-form{padding-top:12px;border-top:1px solid var(--line)}#ag-wb .wb-bar--warn i{background:#e08a00}#ag-wb .wb-warnline{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#8a4b00;background:#fff1d6;border-radius:12px;padding:10px 12px;margin:0}#ag-wb .wb-warnline svg{margin-top:1px}#ag-wb .wb-auto{display:grid;gap:12px;margin-top:18px}#ag-wb .wb-auto-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-top:12px;border-top:1px solid var(--faint)}#ag-wb .wb-auto-row>div{display:grid;gap:2px;min-width:0;flex:1 1 260px}#ag-wb .wb-auto-row .wb-muted{font-size:14px}#ag-wb label.wb-auto-row{justify-content:flex-start;align-items:flex-start}#ag-wb label.wb-auto-row input{margin-top:3px}#ag-wb label.wb-auto-row>span{display:grid;gap:2px}#ag-wb .wb-select{width:auto;min-width:150px;padding-right:34px;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000919' stroke-width='2'/%3E%3C/svg%3E\") no-repeat right 12px center}#ag-wb .wb-input--sm{height:40px;font-size:15px;padding:0 12px;border-radius:12px}#ag-wb .wb-linkline{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px}#ag-wb .wb-cohort-extra{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:4px}#ag-wb .wb-cohort-extra span{display:inline-flex;align-items:center;gap:5px}#ag-wb .wb-cohort-extra svg{width:14px;height:14px}#ag-wb .wb-person-cop{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}#ag-wb .wb-person-cop .wb-label{margin:0;display:inline-flex;align-items:center;color:var(--blue)}#ag-wb .wb-small0{font-size:13px}#ag-wb [data-copadj-slot]:empty{display:none}#ag-wb .wb-questions [data-questions-body]{padding:4px 0 6px}#ag-wb .wb-qlist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}#ag-wb .wb-qlist li{padding:10px 12px;border-radius:12px;background:var(--bg)}#ag-wb .wb-qlist p{font-size:14px;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}#ag-wb .wb-fc-scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding:0 4px 10px}#ag-wb .wb-fc-scope .wb-field>span{font-size:12px;color:var(--muted)}#ag-wb .wb-fc-meta{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--faint);font-size:12px}#ag-wb .wb-fc .wb-msg--a{width:100%;max-width:100%}#ag-wb .wb-proj{position:fixed;inset:0;z-index:2147482600;display:grid;grid-template-rows:auto 1fr auto;gap:20px;padding:24px clamp(20px,5vw,72px) 28px;background:linear-gradient(160deg,var(--deep) 0%,#0000c8 100%);color:#fff;overflow-y:auto}#ag-wb .wb-proj-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;font:700 13px/1.2 \"DM Sans\",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#c9cbf5}#ag-wb .wb-proj-top>span{display:inline-flex;align-items:center;gap:8px}#ag-wb .wb-checkline--light{color:#fff;text-transform:none;letter-spacing:0;font-weight:500}#ag-wb .wb-icon--light{color:#fff}#ag-wb .wb-icon--light:hover{background:rgba(255,255,255,.12)}#ag-wb .wb-proj-main{align-self:center;display:grid;gap:22px;max-width:1100px;width:100%;margin:0 auto}#ag-wb .wb-proj-kicker{display:inline-block;justify-self:start;background:var(--lime);color:var(--ink);font:700 14px/1 \"DM Sans\",sans-serif;letter-spacing:.06em;padding:9px 14px;border-radius:999px}#ag-wb .wb-proj-q{font:400 clamp(30px,4.4vw,58px)/1.15 \"DM Serif Display\",Georgia,serif;color:#fff;white-space:pre-wrap;overflow-wrap:anywhere}#ag-wb .wb-proj-who{font-size:20px;color:var(--lime);font-weight:700}#ag-wb .wb-proj-ans{padding:18px 22px;border-radius:18px;background:rgba(0,9,25,.35);display:grid;gap:8px}#ag-wb .wb-proj-ans span{font:700 12px/1 \"DM Sans\",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#c9cbf5}#ag-wb .wb-proj-ans p{font-size:clamp(17px,1.6vw,22px);line-height:1.5;color:#fff;white-space:pre-wrap;overflow-wrap:anywhere;max-height:30vh;overflow-y:auto}#ag-wb .wb-proj-nav{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px}#ag-wb .wb-btn--onDark{background:rgba(255,255,255,.12);color:#fff}#ag-wb .wb-btn--onDark:hover{background:rgba(255,255,255,.22);color:#fff}#ag-wb .wb-btn--onDark:disabled{opacity:.35}#ag-wb .wb-proj-done{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--lime)}@media (min-width:640px){#ag-wb{padding:36px 36px 48px}#ag-wb .wb-h1{font-size:48px}#ag-wb .wb-hero{padding:36px 34px 32px}#ag-wb .wb-hero .wb-h1{font-size:40px}#ag-wb .wb-steps{grid-template-columns:repeat(2,1fr)}#ag-wb .wb-bpgrid,#ag-wb .wb-two,#ag-wb .wb-vs,#ag-wb .wb-grid2,#ag-wb .wb-pager{grid-template-columns:repeat(2,1fr)}#ag-wb .wb-pager a.is-next{grid-column:2}#ag-wb .wb-section{padding:24px}#ag-wb .wb-statrow{grid-template-columns:repeat(3,1fr)}#ag-wb .wb-clock{grid-template-columns:1.05fr 1fr;padding:28px;gap:22px}#ag-wb .wb-three{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}#ag-wb .wb-kit-howto{grid-template-columns:repeat(3,1fr)}#ag-wb .wb-compare{grid-template-columns:1fr 1fr}#ag-wb .wb-calc-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}#ag-wb .wb-sliders{grid-template-columns:repeat(2,minmax(0,1fr))}#ag-wb .wb-mat{grid-template-columns:42px 1fr auto;align-items:center}#ag-wb .wb-mat-actions{grid-column:3}#ag-wb .wb-week{grid-template-columns:repeat(5,1fr)}#ag-wb .wb-gopts{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#ag-wb .wb-gopt{flex-direction:column;align-items:flex-start}#ag-wb .wb-count b{font-size:52px}#ag-wb .wb-cohorts{grid-template-columns:repeat(2,1fr)}#ag-wb .wb-sessions{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#ag-wb .wb-grid4{grid-template-columns:2fr 1.3fr 1fr 1fr}#ag-wb .wb-grid4>label:first-child,#ag-wb .wb-grid4>label:nth-child(2){grid-column:auto}}@media (min-width:900px){#ag-wb .wb-grid3{grid-template-columns:1.1fr 1.3fr 1fr}#ag-wb .wb-person{grid-template-columns:1.3fr auto 1.2fr;grid-template-areas:\"main pin prog\" \"meta meta meta\" \"cop cop cop\" \"act act act\" \"copadj copadj copadj\" \"edit edit edit\";align-items:center;column-gap:22px}#ag-wb .wb-person-cop{grid-area:cop}#ag-wb [data-copadj-slot]{grid-area:copadj}#ag-wb .wb-person-main{grid-area:main;min-width:0}#ag-wb .wb-person-pin{grid-area:pin}#ag-wb .wb-person-prog{grid-area:prog}#ag-wb .wb-person-meta{grid-area:meta}#ag-wb .wb-person-actions{grid-area:act}#ag-wb [data-edit-slot]{grid-area:edit}#ag-wb .wb-sessrow{grid-template-columns:1.3fr 1.2fr auto;align-items:center;column-gap:20px}#ag-wb .wb-sessrow>.wb-btn{justify-self:end}#ag-wb .wb-sessform-slot{grid-column:1 / -1}}@media (max-width:639px){#ag-wb .wb-toast{bottom:78px}#ag-wb .wb-fab{right:12px;bottom:12px;height:48px;padding:0 16px 0 13px}#ag-wb .wb-cop .wb-drawer-head{padding:14px 14px 8px}#ag-wb .wb-cop .wb-drawer-head .wb-h2{font-size:21px;margin-top:8px}#ag-wb .wb-cop-body{padding:0 10px 10px}#ag-wb .wb-msg{max-width:96%}#ag-wb .wb-msg--a{width:96%}#ag-wb .wb-proj{padding:16px 16px 20px}}@media (max-width:480px){#ag-wb .wb-tab-long{display:none}#ag-wb .wb-tab{padding:10px 8px;gap:5px;font-size:13px}}@media (max-width:420px){#ag-wb{border-radius:18px;padding:22px 16px 32px}#ag-wb .wb-h1{font-size:34px}#ag-wb .wb-tool{padding:0 12px;font-size:13px}}@media print{#ag-wb .wb-save,#ag-wb .wb-toast,#ag-wb .wb-layer{display:none}}@media (prefers-reduced-motion:reduce){#ag-wb *,#ag-wb *::before,#ag-wb *::after{animation:none!important;transition:none!important}}";
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
-  window.AG_WB = { version: '1.5', mount: mount };
+  window.AG_WB = { version: '1.6', mount: mount };
 })();
