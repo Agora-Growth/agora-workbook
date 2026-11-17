@@ -15,6 +15,7 @@ Workbook en línea del Sistema de Ingresos™ que se embebe en Webflow y se sirv
 - **Correos automáticos**: recordatorio un día antes y una hora antes de cada sesión, y check-ins del plan de 90 días a los 30, 60 y 90 días (con aviso a Agora si alguien pide ayuda).
 - **Calendario y feedback**: cada sesión se agrega a Google Calendar o como .ics, y muestra su formulario de feedback desde que empieza.
 - **Mi empresa** (v1.7): perfil corto del negocio de cada participante (sector, tamaño, ventas, mercados, cómo vende, reto). Lo usan el copiloto, el copiloto del facilitador y el botón «Copiar con mi contexto» de cada prompt; también va en el PDF.
+- **Liga de inscripción** (v1.10): cada cohorte tiene una liga pública (`#wb/registro/<código>`) donde el participante se inscribe solo con su nombre, empresa y correo, confirma su correo en un segundo paso (con sugerencia si el dominio parece mal escrito) y recibe su PIN por correo al instante. El panel muestra la liga, la abre o cierra, genera una nueva y marca a quién se inscribió así.
 - **Tutorial** (v1.7): recorrido guiado y repetible que resalta cada parte del workbook y explica qué llenar (inicio, guía previa, un Blueprint con su kit, plan de 90 días y Mi empresa).
 
 | Página | Contenedor | Config |
